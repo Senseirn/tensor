@@ -86,6 +86,7 @@ class tensor {
 
  public:
   typedef T type;
+  typedef std::array<int, D> multi_index;
 
   // default constructor
   tensor() : _data(nullptr) {}
@@ -192,6 +193,30 @@ class tensor {
 
   int N() const { return _N; }
 
+  void reshape(const std::array<int, D>& shapes) {
+    if (std::find(std::begin(shapes), std::end(shapes), 0) !=
+        std::end(shapes)) {
+      std::cerr << "error: 0 is not permitted as a size of dimension"
+                << std::endl;
+      std::exit(1);
+    }
+
+    _N = std::accumulate(std::begin(shapes), std::end(shapes), 1,
+                         std::multiplies<int>());
+    // for (int i = 0; i < D; i++) _dims[i] = shapes[i];
+
+    std::copy(std::begin(shapes), std::end(shapes), std::begin(_dims));
+
+    _strides[D - 1] = _N / _dims[D - 1];
+    for (int i = D - 2; i >= 0; i--) {
+      _strides[i] = _strides[i + 1] / _dims[i];
+    }
+
+    delete[] _data;
+    _data = new T[_N];
+    _extents.init(_data, _strides);
+  }
+
   int shape() const { return D; }
   int shape(const int d) const { return _dims[d - 1]; }
   const std::vector<int>& dims() const { return _dims; }
@@ -199,7 +224,7 @@ class tensor {
   int strides(const int d) const { return _strides[d]; }
   const std::vector<int>& strides() const { return _strides; }
 
-  T& with_indices(const std::array<int, D>& indices) {
+  T& with_indices(const multi_index& indices) {
     // i* strides(3) + j* strides(2) * k* strides(1) + l;
     int idx = 0;
     for (int i = D - 1; i > 0; --i) idx += indices[D - 1 - i] * strides(i);
@@ -221,6 +246,7 @@ class tensor<T, 1> {
 
  public:
   typedef T type;
+  typedef int multi_index;
 
   // default constructor
   tensor() : _data(nullptr) {}
