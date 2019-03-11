@@ -129,6 +129,18 @@ class tensor {
     _extents.init(_data, _strides);
   }
 
+  tensor(tensor&& src) {
+    _N = src.N();
+    _data = src.data();
+    src.data() = nullptr;
+    // std::copy(src.begin(), src.end(), _data);
+
+    _dims = std::move(src.dims());
+    _strides = std::move(src.strides());
+
+    _extents.init(_data, _strides);
+  }
+
   tensor& operator=(const tensor& src) {
     delete[] _data;
 
@@ -138,6 +150,21 @@ class tensor {
 
     _dims = src.dims();
     _strides = src.strides();
+
+    _extents.init(_data, _strides);
+
+    return *this;
+  }
+
+  tensor& operator=(tensor&& src) {
+    delete[] _data;
+
+    _N = src.N();
+    _data = src.data();
+    // std::copy(src.begin(), src.end(), _data);
+
+    _dims = std::move(src.dims());
+    _strides = std::move(src.strides());
 
     _extents.init(_data, _strides);
 
@@ -158,7 +185,7 @@ class tensor {
   const T* const begin() const { return _data; }
   const T* const end() const { return _data + _N; }
 
-  T* data() { return _data; }
+  T*& data() { return _data; }
   const T* const data() const { return _data; }
 
   void fill(T x) { std::fill(_data, _data + _N, x); }
@@ -224,6 +251,16 @@ class tensor<T, 1> {
     _strides = src.strides();
   }
 
+  tensor(tensor&& src) {
+    _N = src.N();
+    _data = src.data();
+    src.data() = nullptr;
+    // std::copy(src.begin(), src.end(), _data);
+
+    _dims = std::move(src.dims());
+    _strides = std::move(src.strides());
+  }
+
   tensor& operator=(const tensor& src) {
     delete[] _data;
 
@@ -233,6 +270,20 @@ class tensor<T, 1> {
 
     _dims = src.dims();
     _strides = src.strides();
+
+    return *this;
+  }
+
+  tensor& operator=(tensor&& src) {
+    delete[] _data;
+
+    _N = src.N();
+    _data = src.data();
+    src.data() = nullptr;
+    // std::copy(src.begin(), src.end(), _data);
+
+    _dims = std::move(src.dims());
+    _strides = std::move(src.strides());
 
     return *this;
   }
@@ -247,7 +298,7 @@ class tensor<T, 1> {
   const T* const begin() const { return _data; }
   const T* const end() const { return _data + _N; }
 
-  T* data() { return _data; }
+  T*& data() { return _data; }
   const T* const data() const { return _data; }
 
   void fill(T x) { std::fill(_data, _data + _N, x); }

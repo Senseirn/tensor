@@ -9,13 +9,14 @@ int main() {
   tensor<float, 2> B{N, N};
   tensor<float, 2> C{N, N};
 
-  tensor<float, 4> D{4, 3, 2, 1};
+  tensor<float, 4> F{4, 3, 2, 1};
   // ゼロフィル
   C.fill(0.f);
   // 1から始まる連番で埋める
   std::iota(std::begin(A), std::end(A), 1.f);
   std::iota(std::begin(B), std::end(B), 1.f);
-  std::iota(std::begin(D), std::end(D), 1.f);
+  std::iota(std::begin(F), std::end(F), 1.f);
+  tensor<float, 4> D = std::move(F);
 
   for (int i = 0; i < D.shape(4); i++)
     for (int j = 0; j < D.shape(3); j++)
@@ -27,9 +28,10 @@ int main() {
 
   tensor<float, 1> E{10};
   std::iota(std::begin(E), std::end(E), 1);
+  auto G = std::move(E);
 
-  for (int i = 0; i < E.shape(1); i++)
-    std::cout << E.with_indices({i}) << std::endl;
+  for (int i = 0; i < G.shape(1); i++)
+    std::cout << G.with_indices({i}) << std::endl;
 
   // A.shape(n): n次元目の要素数を取得
 
