@@ -10,6 +10,8 @@
 #include <numeric>
 #include <vector>
 
+namespace rnz {
+
 template <typename T, std::size_t D>
 struct tensor_extent {
   tensor_extent<T, D - 1> _extents;
@@ -180,3 +182,91 @@ class tensor {
 
   ~tensor() { delete[] _data; }
 };
+
+template <typename T>
+class tensor<T, 1> {
+ private:
+  T* _data;                   // a pointer to the data
+  std::size_t _N;             // total elements of tensor
+  std::vector<int> _dims;     // the num of elements in each dimension
+  std::vector<int> _strides;  // access strides
+  // tensor_extent<T, D - 1> _extents;  // inner struct to calculate index
+
+ public:
+  typedef T type;
+
+  // default constructor
+  tensor() : _data(nullptr) {}
+
+  // constructor: acceptes initililzer_list whose size is D
+  tensor(std::size_t d) : _data(nullptr), _dims(1), _strides(1) {
+    // error check
+    // if one of arguments is 0
+    if (d == 0) {
+      std::cerr << "error: 0 is not permitted as a size of dimension"
+                << std::endl;
+      std::exit(1);
+    }
+    // std::reverse(_dims.begin(), _dims.end());
+
+    _N = d;
+    _data = new T[_N];
+    _dims[0] = _N;
+    _strides[0] = 1;
+  }
+
+  tensor(const tensor& src) {
+    _N = src.N();
+    _data = new T[_N];
+    std::copy(src.begin(), src.end(), _data);
+
+    _dims = src.dims();
+    _strides = src.strides();
+  }
+
+  tensor& operator=(const tensor& src) {
+    delete[] _data;
+
+    _N = src.N();
+    _data = new T[_N];
+    std::copy(src.begin(), src.end(), _data);
+
+    _dims = src.dims();
+    _strides = src.strides();
+
+    return *this;
+  }
+
+  T& operator[](int i) { return _data[i]; }
+
+  const T operator[](int i) const { return _data[i]; }
+
+  T* begin() { return _data; }
+  T* end() { return _data + _N; }
+
+  const T* const begin() const { return _data; }
+  const T* const end() const { return _data + _N; }
+
+  T* data() { return _data; }
+  const T* const data() const { return _data; }
+
+  void fill(T x) { std::fill(_data, _data + _N, x); }
+
+  int N() const { return _N; }
+
+  int shape() const { return 1; }
+  int shape(const int d) const { return _dims[d - 1]; }
+  const std::vector<int>& dims() const { return _dims; }
+
+  int strides(const int d) const { return _strides[d]; }
+  const std::vector<int>& strides() const { return _strides; }
+
+  T& with_indices(const int indices) { return _data[indices]; }
+
+  ~tensor() { delete[] _data; }
+};
+
+template <typename T>
+using vector = tensor<T, 1>;
+
+}  // namespace rnz
