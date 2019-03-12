@@ -13,12 +13,13 @@
  *  高速な計算が行える。
  */
 
-#include <chrono>
 #include "tensor.h"
+#include <chrono>
 
 int main() {
   using namespace rnz;
-  const int N = 512;
+  using namespace std::chrono;
+  const int N = 2;
 
   // 2次元テンソルの生成: float A[N][N]と等価
   // 2次元テンソル = 行列　と考えてok
@@ -37,20 +38,43 @@ int main() {
   // 要素へのアクセス方法は３つある
   // 1つめの方法: 添字によるアクセス
   // 一番直感的だけど、一番遅いので速度が重視されない場面でどうぞ
+  // あと、この方法はopenmpとの相性が良くない
   // shape(D): D次元目の要素数を返す
-  for (int i = 0; i < A.shape(2); i++)
-    for (int j = 0; j < A.shape(1); j++) C[i][j] = A[i][j] + B[i][j];
+  auto st1 = system_clock::now();
+  {
+#pragma omp parallel for firstprivate(A, B)
+    for (int i = 0; i < A.shape(2); i++) {
+      for (int k = 0; k < A.shape(1); k++) {
+        for (int j = 0; j < A.shape(2); j++) {
+          C[i][j] += A[i][k] * B[k][j];
+        }
+      }
+    }
+  }
+  auto end1 = system_clock::now();
+  auto time1 = duration_cast<milliseconds>(end1 - st1).count() / 1000.f;
 
+  auto sum1 = std::accumulate(std::begin(C), std::end(C), (double)0);
   std::fill(std::begin(C), std::end(C), 0.f);
   // 2つ目の方法
   // with_indicesメソッド経由でのアクセス
   // そこそこわかりやすい上に、下のポインタ経由でのアクセスとほぼ同等の速度
   // 個人的に一番おすすめ
-  for (int i = 0; i < A.shape(2); i++)
-    for (int j = 0; j < A.shape(1); j++)
-      C.with_indices({i, j}) = A.with_indices({i, j}) + B.with_indices({i, j});
+  auto st2 = system_clock::now();
+  {
+#pragma omp parallel for firstprivate(A, B)
+    for (int i = 0; i < A.shape(2); i++)
+      for (int k = 0; k < A.shape(1); k++)
+        for (int j = 0; j < A.shape(2); j++)
+          C.with_indices({i, j}) +=
+              A.with_indices({i, k}) * B.with_indices({k, j});
+  }
+  auto end2 = system_clock::now();
+  auto time2 = duration_cast<milliseconds>(end2 - st2).count() / 1000.f;
 
+  auto sum2 = std::accumulate(std::begin(C), std::end(C), (double)0);
   std::fill(std::begin(C), std::end(C), 0.f);
+
   // 3つめの方法
   // dataメソッドで内部配列のポインタを取得してアクセス
   // わかりにくいけど、間違いなく最速
@@ -68,13 +92,26 @@ int main() {
    *  tensorでは、このずれをstrideとして保存しているおり、
    *  D次元目のインデックスに対応するずれをstrides(D-1)の形で取得できる
    */
-  for (int i = 0; i < A.shape(2); i++)
-    for (int j = 0; j < A.shape(1); j++)
-      C.data()[i * C.strides(1) + j] =
-          A.data()[i * A.strides(1) + j] + B.data()[i * B.strides(1) + j];
+
+  auto st3 = system_clock::now();
+  {
+#pragma omp parallel for firstprivate(A, B)
+    for (int i = 0; i < A.shape(2); i++)
+      for (int k = 0; k < A.shape(1); k++)
+        for (int j = 0; j < A.shape(2); j++)
+          C.data()[i * C.strides(1) + j] +=
+              A.data()[i * A.strides(1) + k] * B.data()[k * B.strides(1) + j];
+  }
+  auto end3 = system_clock::now();
+  auto time3 = duration_cast<milliseconds>(end3 - st3).count() / 1000.f;
+  auto sum3 = std::accumulate(std::begin(C), std::end(C), (double)0);
+
+  std::cout << "method1: " << time1 << "s: " << sum1 << std::endl;
+  std::cout << "method2: " << time2 << "s: " << sum2 << std::endl;
+  std::cout << "method3: " << time3 << "s: " << sum3 << std::endl;
 
   // 内部配列の型と次元が同じならば、コピー可能
-  tensor<float, 2> D = C;  // ok
+  tensor<float, 2> D = C; // ok
   // tensor<double, 2>  D = C; // error
   // tensor<double, 3>  D = C; // error
 
@@ -83,6 +120,17 @@ int main() {
   // 内部配列が再確保されるので、保存されていたデータは消えます
   D.reshape({N * 3, N * 2});
 
-  std::cout << D.shape(2) << std::endl;  // N * 3
-  std::cout << D.shape(1) << std::endl;  // N * 2
+  std::cout << D.shape(2) << std::endl; // N * 3
+  std::cout << D.shape(1) << std::endl; // N * 2
+
+  // 4次元テンソルの宣言
+  // 宣言時に各次元のサイズを指定しなくてもよい
+  tensor<float, 4> E;
+  // あとからreshapeでサイズ変更
+  E.reshape({4, 3, 2, 1});
+
+  tensor<float, 4> F({2, 4, 3, 1});
+
+  tensor<float, 3> F3;
+  std::cout << F3.shape() << std::endl;
 }
