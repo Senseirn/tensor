@@ -21,6 +21,8 @@ int main(int argc, char *argv[]) {
   using namespace std::chrono;
   const int N = std::atoi(argv[1]);
 
+  /*
+
   // 2次元テンソルの生成: float A[N][N]と等価
   // 2次元テンソル = 行列　と考えてok
   // tensor<内部配列の型(float,double,int等), 次元>
@@ -74,6 +76,8 @@ int main(int argc, char *argv[]) {
   auto sum2 = std::accumulate(std::begin(C), std::end(C), (double)0);
   std::fill(std::begin(C), std::end(C), 0.f);
 
+  */
+
   // 3つめの方法
   // dataメソッドで内部配列のポインタを取得してアクセス
   // わかりにくいけど、間違いなく最速
@@ -92,6 +96,7 @@ int main(int argc, char *argv[]) {
    *  D次元目のインデックスに対応するずれをstrides(D-1)の形で取得できる
    */
 
+  /*
   auto st3 = system_clock::now();
   {
 #pragma omp parallel for firstprivate(A, B)
@@ -127,9 +132,40 @@ int main(int argc, char *argv[]) {
   tensor<float, 4> E;
   // あとからreshapeでサイズ変更
   E.reshape({4, 3, 2, 1});
+  std::iota(E.begin(), E.end(), 1);
 
-  tensor<float, 4> F({2, 4, 3, 1});
+  std::cout << "shape E 4: " << E.shape(4) << std::endl;
+  std::cout << "shape E 3: " << E.shape(3) << std::endl;
+  std::cout << "shape E 2: " << E.shape(2) << std::endl;
+  std::cout << "shape E 1: " << E.shape(1) << std::endl;
+  std::cout << "here!" << std::endl;
+  for (int m = 0; m < E.shape(4); m++) {
+    std::cout << "m" << std::endl;
+    for (int i = 0; i < E.shape(3); i++)
+      for (int j = 0; j < E.shape(2); j++)
+        for (int k = 0; k < E.shape(1); k++)
+          std::cout << E[m][i][j][k] << " ";
+  }
 
-  tensor<float, 3> F3;
-  std::cout << F3.shape() << std::endl;
+  std::cout << std::endl;
+
+  std::cout << "here" << std::endl;
+  */
+  tensor<float, 3> E({2, 2, 3});
+  std::iota(E.begin(), E.end(), 1);
+
+  decltype(E)::view<2> Esub;
+  Esub = (E.make_view<2>({0}));
+
+  std::cout << std::endl;
+  auto new_Esub = Esub.to_tensor();
+  Esub[0][0] = 10;
+  for (int i = 0; i < Esub.shape(2); i++)
+    for (int j = 0; j < Esub.shape(1); j++)
+      std::cout << Esub[i][j] << std::endl;
+
+  std::cout << "here" << std::endl;
+  for (int i = 0; i < new_Esub.shape(2); i++)
+    for (int j = 0; j < new_Esub.shape(1); j++)
+      std::cout << new_Esub[i][j] << std::endl;
 }
