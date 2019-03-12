@@ -231,6 +231,10 @@ public:
     return _data[idx];
   }
 
+  template <typename... Args> T &with_indices(Args... args) {
+    return with_indices({args...});
+  }
+
   ~tensor() { delete[] _data; }
 };
 

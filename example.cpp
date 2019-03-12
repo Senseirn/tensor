@@ -16,10 +16,10 @@
 #include "tensor.h"
 #include <chrono>
 
-int main() {
+int main(int argc, char *argv[]) {
   using namespace rnz;
   using namespace std::chrono;
-  const int N = 2;
+  const int N = std::atoi(argv[1]);
 
   // 2次元テンソルの生成: float A[N][N]と等価
   // 2次元テンソル = 行列　と考えてok
@@ -66,8 +66,7 @@ int main() {
     for (int i = 0; i < A.shape(2); i++)
       for (int k = 0; k < A.shape(1); k++)
         for (int j = 0; j < A.shape(2); j++)
-          C.with_indices({i, j}) +=
-              A.with_indices({i, k}) * B.with_indices({k, j});
+          C.with_indices(i, j) += A.with_indices(i, k) * B.with_indices(k, j);
   }
   auto end2 = system_clock::now();
   auto time2 = duration_cast<milliseconds>(end2 - st2).count() / 1000.f;
@@ -106,9 +105,9 @@ int main() {
   auto time3 = duration_cast<milliseconds>(end3 - st3).count() / 1000.f;
   auto sum3 = std::accumulate(std::begin(C), std::end(C), (double)0);
 
-  std::cout << "method1: " << time1 << "s: " << sum1 << std::endl;
-  std::cout << "method2: " << time2 << "s: " << sum2 << std::endl;
-  std::cout << "method3: " << time3 << "s: " << sum3 << std::endl;
+  std::cout << "method1: time " << time1 << "s: sum " << sum1 << std::endl;
+  std::cout << "method2: time " << time2 << "s: sum " << sum2 << std::endl;
+  std::cout << "method3: time " << time3 << "s: sum " << sum3 << std::endl;
 
   // 内部配列の型と次元が同じならば、コピー可能
   tensor<float, 2> D = C; // ok
