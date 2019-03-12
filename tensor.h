@@ -25,6 +25,8 @@ private:
 
 public:
   typedef std::array<int, D> multi_index;
+  template <std::size_t _D> using view = tensor_view<T, _D>;
+
   tensor_view() : _data(nullptr), _dims(D), _strides(D) {}
   tensor_view(T *p, const std::vector<int> &dims,
               const std::vector<int> &strides)
@@ -121,6 +123,15 @@ public:
   }
 
   tensor<T, D> to_tensor() { return tensor<T, D>(*this); }
+
+  template <std::size_t _D>
+  view<_D> make_view(const std::array<int, D - _D> &indices) {
+    multi_index midx;
+    std::fill(midx.begin(), midx.end(), 0);
+    std::copy(indices.begin(), indices.end(), midx.begin());
+    // std::reverse(midx.begin(), midx.end());
+    return view<_D>(&with_indices(midx), _dims, _strides);
+  }
 };
 
 template <typename T> class tensor_view<T, 1> {

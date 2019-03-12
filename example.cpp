@@ -168,4 +168,9 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < new_Esub.shape(2); i++)
     for (int j = 0; j < new_Esub.shape(1); j++)
       std::cout << new_Esub[i][j] << std::endl;
+
+  std::cout << "Esubsub" << std::endl;
+  decltype(Esub)::view<1> Esubsub = Esub.make_view<1>({0});
+  for (int i = 0; i < Esubsub.shape(1); i++)
+    std::cout << Esubsub[i] << std::endl;
 }
