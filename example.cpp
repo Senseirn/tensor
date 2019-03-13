@@ -23,9 +23,9 @@ int main(int argc, char* argv[]) {
 
   std::cout << std::numeric_limits<std::size_t>::max() << std::endl;
   std::cout << std::numeric_limits<long>::max() << std::endl;
-  std::cout << 200 * 256 * 256 * 512L << std::endl;
+  std::cout << 1 * 256 * 256 * 512L << std::endl;
 
-  tensor<float, 2> A, B, C;
+  tensor<float, 2, unsigned int> A, B, C;
   A.reshape({2, 2});
   B.reshape({2, 2});
   C.reshape({2, 2});

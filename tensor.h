@@ -33,6 +33,11 @@
 #define unlikely(x) (x)
 #endif
 
+/*--- define default internal type ---*/
+#ifndef TENSOR_DEFAULT_INTERNAL_TYPE
+#define TENSOR_DEFAULT_INTERNAL_TYPE std::size_t
+#endif
+
 #include <algorithm>
 #include <array>
 #include <functional>
@@ -66,11 +71,11 @@ void check_range(const T1 i, const T2 dim, const T3 D) {
 }
 
 /*--- forward declarations ---*/
-template <typename T, std::size_t D, typename INTERNAL_TYPE = std::size_t>
+template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
 struct tensor_extent;
-template <typename T, std::size_t D, typename INTERNAL_TYPE = std::size_t>
+template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
 class tensor;
-template <typename T, std::size_t D, typename INTERNAL_TYPE = std::size_t>
+template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
 class tensor_view;
 
 /*--- functions ---*/
