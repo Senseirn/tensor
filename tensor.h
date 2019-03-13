@@ -11,8 +11,18 @@
         (cause performace overhead)
 */
 
+/*--- if TENSOR_ENABLE_ASSERTS macro is defined ---*/
 #if not defined(TENSOR_ENABLE_ASSERTS)
 #define NDEBUG
+#endif
+
+/*--- define likely and unlikely macros ---*/
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
 #endif
 
 #include <algorithm>
@@ -31,7 +41,7 @@ namespace rnz {
 /*--- check_range() ---*/
 void check_range(const int i, const int dim) {
 #ifdef TENSOR_ENABLE_ASSERTS
-  if (i < 0 || i >= dim) {
+  if (unlikely(i < 0 || i >= dim)) {
     std::cerr << "error: out of range access (idx=" << i << ", dim=" << dim << ")" << std::endl;
     std::exit(1);
   }
@@ -40,7 +50,7 @@ void check_range(const int i, const int dim) {
 
 void check_range(const int i, const int dim, const int D) {
 #ifdef TENSOR_ENABLE_ASSERTS
-  if (i < 0 || i >= dim) {
+  if (unlikely(i < 0 || i >= dim)) {
     std::cerr << "error: out of range access [trying to access " << i << "th element in " << D
               << "th dimension(max range = " << dim - 1 << ")]" << std::endl;
     std::exit(1);

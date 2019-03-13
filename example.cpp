@@ -158,13 +158,9 @@ int main(int argc, char* argv[]) {
 
   using namespace std::chrono;
   auto st = system_clock::now();
+  auto view_ = A.make_view<3>({0});
 
-  for (int m = 0; m < N * 5; m++)
-    for (int i = 0; i < A.shape(3); i++)
-      for (int j = 0; j < A.shape(2); j++)
-        for (int k = 0; k < A.shape(1); k++)
-          //    A[m][i][j][k] = x++;
-          A.with_indices(m, i, j, k) = x++;
+  view_.with_indices(N, 500, N - 1);
 
   auto end = system_clock::now();
   const auto& partial = A.make_view<2>({0, 0});
