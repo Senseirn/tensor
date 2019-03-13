@@ -44,7 +44,8 @@
 namespace rnz {
 
 /*--- check_range() ---*/
-void check_range(const int i, const int dim) {
+template <typename T1, typename T2>
+void check_range(const T1 i, const T2 dim) {
 #ifdef TENSOR_ENABLE_ASSERTS
   if (unlikely(i < 0 || i >= dim)) {
     std::cerr << "error: out of range access (idx=" << i << ", dim=" << dim << ")" << std::endl;
@@ -53,7 +54,8 @@ void check_range(const int i, const int dim) {
 #endif
 }
 
-void check_range(const int i, const int dim, const int D) {
+template <typename T1, typename T2, typename T3>
+void check_range(const T1 i, const T2 dim, const T3 D) {
 #ifdef TENSOR_ENABLE_ASSERTS
   if (unlikely(i < 0 || i >= dim)) {
     std::cerr << "error: out of range access [trying to access " << i << "th element in " << D
@@ -64,40 +66,43 @@ void check_range(const int i, const int dim, const int D) {
 }
 
 /*--- forward declarations ---*/
-template <typename T, std::size_t D>
+template <typename T, std::size_t D, typename INTERNAL_TYPE = std::size_t>
 struct tensor_extent;
-template <typename T, std::size_t D>
+template <typename T, std::size_t D, typename INTERNAL_TYPE = std::size_t>
 class tensor;
-template <typename T, std::size_t D>
+template <typename T, std::size_t D, typename INTERNAL_TYPE = std::size_t>
 class tensor_view;
 
 /*--- functions ---*/
 
 // a helper function returning a tensor object.
-template <typename T, std::size_t D>
-tensor<T, D> make_tensor(const std::initializer_list<int>& initialzier) {
-  return tensor<T, D>(initialzier);
+template <typename T, std::size_t D, typename INTERNAL_TYPE = std::size_t>
+tensor<T, D, INTERNAL_TYPE> make_tensor(const std::initializer_list<int>& initialzier) {
+  return tensor<T, D, INTERNAL_TYPE>(initialzier);
 }
 
 /*--- class and struct ---*/
 
-template <typename T, std::size_t D>
+template <typename T, std::size_t D, typename INTERNAL_TYPE>
 class tensor_view {
  private:
   T* _data; // a pointer to the first data of dimension D
   std::size_t _num_elements;
   std::vector<std::size_t> _dims;    // the num of elements in each dimension
   std::vector<std::size_t> _strides; // access strides
-  tensor_extent<T, D - 1> _extents;
+  tensor_extent<T, D - 1, INTERNAL_TYPE> _extents;
 
  public:
   /*--- typedefs ---*/
+  typedef T value_type;
   typedef std::array<int, D> multi_index;
+  typedef std::size_t index;
+
   template <std::size_t _D>
-  using view = tensor_view<T, _D>;
+  using view = tensor_view<T, _D, INTERNAL_TYPE>;
+
   template <std::size_t _D>
   using fixed_indices = std::array<int, _D>;
-  typedef std::size_t index;
 
   /*--- constructors ---*/
   tensor_view()
@@ -150,12 +155,12 @@ class tensor_view {
     return *this;
   }
 
-  tensor_extent<T, D - 1>& operator[](int i) {
+  tensor_extent<T, D - 1, INTERNAL_TYPE>& operator[](int i) {
     check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
 
-  const tensor_extent<T, D - 1>& operator[](int i) const {
+  const tensor_extent<T, D - 1, INTERNAL_TYPE>& operator[](int i) const {
     check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
@@ -219,7 +224,7 @@ class tensor_view {
     return with_indices({args...});
   }
 
-  tensor<T, D> to_tensor() const { return tensor<T, D>(*this); }
+  tensor<T, D, INTERNAL_TYPE> to_tensor() const { return tensor<T, D, INTERNAL_TYPE>(*this); }
 
   template <std::size_t _D>
   view<_D> make_view(const fixed_indices<D - _D>& indices) {
@@ -231,8 +236,8 @@ class tensor_view {
   }
 };
 
-template <typename T>
-class tensor_view<T, 1> {
+template <typename T, typename INTERNAL_TYPE>
+class tensor_view<T, 1, INTERNAL_TYPE> {
  private:
   T* _data;                          // a pointer to the data
   std::size_t _num_elements;         // total elements of tensor
@@ -242,7 +247,7 @@ class tensor_view<T, 1> {
 
  public:
   /*--- typedefs ---*/
-  typedef T type;
+  typedef T value_type;
   typedef unsigned int multi_index;
   typedef std::size_t index;
 
@@ -342,24 +347,24 @@ class tensor_view<T, 1> {
     return _data[indices];
   }
 
-  tensor<T, 1> to_tensor() const { return tensor<T, 1>(*this); }
+  tensor<T, 1, INTERNAL_TYPE> to_tensor() const { return tensor<T, 1, INTERNAL_TYPE>(*this); }
 };
 
-template <typename T, std::size_t D>
+template <typename T, std::size_t D, typename INTERNAL_TYPE>
 struct tensor_extent {
-  tensor_extent<T, D - 1> _extents;
+  tensor_extent<T, D - 1, INTERNAL_TYPE> _extents;
   T* _p;
   std::size_t _dim;    // D次元の要素数
   std::size_t _stride; // D-1次元までの要素数
   mutable std::size_t _accum;
 
   /*--- functions ---*/
-  inline tensor_extent<T, D>& calc_index(const std::size_t accum) {
+  inline tensor_extent<T, D, INTERNAL_TYPE>& calc_index(const std::size_t accum) {
     _accum = accum;
     return *this;
   }
 
-  inline const tensor_extent<T, D>& calc_index(const std::size_t accum) const {
+  inline const tensor_extent<T, D, INTERNAL_TYPE>& calc_index(const std::size_t accum) const {
     _accum = accum;
     return *this;
   }
@@ -374,12 +379,12 @@ struct tensor_extent {
   , _stride(stride)
   , _extents(p, stride) {}
 
-  tensor_extent<T, D - 1>& operator[](const unsigned int i) {
+  tensor_extent<T, D - 1, INTERNAL_TYPE>& operator[](const unsigned int i) {
     check_range(i, _dim, D);
     return _extents.calc_index(i * _stride + _accum);
   }
 
-  const tensor_extent<T, D - 1>& operator[](const unsigned int i) const {
+  const tensor_extent<T, D - 1, INTERNAL_TYPE>& operator[](const unsigned int i) const {
     check_range(i, _dim, D);
     return _extents.calc_index(i * _stride + _accum);
   }
@@ -394,8 +399,8 @@ struct tensor_extent {
   }
 };
 
-template <typename T>
-struct tensor_extent<T, 1> {
+template <typename T, typename INTERNAL_TYPE>
+struct tensor_extent<T, 1, INTERNAL_TYPE> {
   T* _p;
   int _dim;
   mutable std::size_t _accum;
@@ -406,12 +411,12 @@ struct tensor_extent<T, 1> {
   tensor_extent(T* p, std::size_t stride)
   : _p(p) {}
 
-  tensor_extent<T, 1>& calc_index(const std::size_t accum) {
+  tensor_extent<T, 1, INTERNAL_TYPE>& calc_index(const std::size_t accum) {
     _accum = accum;
     return *this;
   }
 
-  const tensor_extent<T, 1>& calc_index(const std::size_t accum) const {
+  const tensor_extent<T, 1, INTERNAL_TYPE>& calc_index(const std::size_t accum) const {
     _accum = accum;
     return *this;
   }
@@ -432,27 +437,29 @@ struct tensor_extent<T, 1> {
   }
 };
 
-template <typename T, std::size_t D>
+template <typename T, std::size_t D, typename INTERNAL_TYPE>
 class tensor {
  private:
-  T* _data;                          // a pointer to the data
-  std::size_t _num_elements;         // total elements of tensor
-  std::vector<std::size_t> _dims;    // the num of elements in each dimension
-  std::vector<std::size_t> _strides; // access strides
-  tensor_extent<T, D - 1> _extents;  // inner struct to calculate index
+  T* _data;                                        // a pointer to the data
+  std::size_t _num_elements;                       // total elements of tensor
+  std::vector<std::size_t> _dims;                  // the num of elements in each dimension
+  std::vector<std::size_t> _strides;               // access strides
+  tensor_extent<T, D - 1, INTERNAL_TYPE> _extents; // inner struct to calculate index
 
  public:
   /*--- typedefs ---*/
-  typedef T type;
+  typedef T value_type;
   typedef std::array<unsigned int, D> multi_index;
 
   template <std::size_t _D>
-  using view = tensor_view<T, _D>;
+  using view = tensor_view<T, _D, INTERNAL_TYPE>;
 
   template <std::size_t _D>
   using fixed_indices = std::array<unsigned int, _D>;
 
   typedef std::size_t index;
+
+  typedef INTERNAL_TYPE itype;
 
   /*--- constructors ---*/
   tensor()
@@ -539,12 +546,12 @@ class tensor {
     return *this;
   }
 
-  tensor_extent<T, D - 1>& operator[](const unsigned int i) {
+  tensor_extent<T, D - 1, INTERNAL_TYPE>& operator[](const unsigned int i) {
     check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
 
-  const tensor_extent<T, D - 1>& operator[](const unsigned int i) const {
+  const tensor_extent<T, D - 1, INTERNAL_TYPE>& operator[](const unsigned int i) const {
     check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
@@ -622,8 +629,8 @@ class tensor {
   ~tensor() { delete[] _data; }
 };
 
-template <typename T>
-class tensor<T, 1> {
+template <typename T, typename INTERNAL_TYPE>
+class tensor<T, 1, INTERNAL_TYPE> {
  private:
   T* _data;                          // a pointer to the data
   std::size_t _num_elements;         // total elements of tensor
@@ -752,7 +759,7 @@ class tensor<T, 1> {
 };
 
 /*--- typedefs ---*/
-template <typename T>
-using vector = tensor<T, 1>;
+template <typename T, typename INTERNAL_TYPE>
+using vector = tensor<T, 1, INTERNAL_TYPE>;
 
 } // namespace rnz

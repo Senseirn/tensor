@@ -42,4 +42,8 @@ int main(int argc, char* argv[]) {
 
   auto sum = std::accumulate(C.begin(), C.end(), 0.0);
   std::cout << sum << std::endl;
+
+  std::cout << sizeof(tensor<float, 2, std::size_t>::itype) << std::endl;
+  std::cout << sizeof(tensor<float, 2, int>::itype) << std::endl;
+  std::cout << sizeof(tensor<float, 2>::itype) << std::endl;
 }
