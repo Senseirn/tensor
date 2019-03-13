@@ -152,19 +152,23 @@ int main(int argc, char* argv[]) {
   std::cout << "here" << std::endl;
   */
 
-  tensor<float, 4> A{N, N, N, N};
+  tensor<float, 4> A{N * 4, N * 3, N * 2, N * 1};
 
   long x = 0;
 
   using namespace std::chrono;
   auto st = system_clock::now();
 
+  for (int m = 0; m < N * 5; m++)
+    for (int i = 0; i < A.shape(3); i++)
+      for (int j = 0; j < A.shape(2); j++)
+        for (int k = 0; k < A.shape(1); k++)
+          //    A[m][i][j][k] = x++;
+          A.with_indices(m, i, j, k) = x++;
+
   auto end = system_clock::now();
-  const auto& partial = A.make_view<1>({0, 0, 0});
+  const auto& partial = A.make_view<2>({0, 0});
   auto sum = std::accumulate(partial.begin(), partial.end(), 0);
   std::cout << "time: " << duration_cast<milliseconds>(end - st).count() / 1000.f << std::endl;
   std::cout << "sum: " << sum << std::endl;
-
-  auto tt = make_tensor<float, 2>({3, 2});
-  auto ttv = tt.make_view<2>({});
 }

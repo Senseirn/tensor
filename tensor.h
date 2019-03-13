@@ -1,7 +1,18 @@
 #pragma once
 
+/* Configuration MACRO:
+      TENSOR_DISABLE_ASSERTS
+        disable range check when access to elements.
+        (cause performace overhead)
+*/
+
+#if not defined(TENSOR_ENABLE_ASSERTS)
+#define NDEBUG
+#endif
+
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <cstddef>
 #include <functional>
@@ -11,6 +22,26 @@
 #include <vector>
 
 namespace rnz {
+
+/*--- check_range() ---*/
+void check_range(const int i, const int dim) {
+#ifdef TENSOR_ENABLE_ASSERTS
+  if (i < 0 || i >= dim) {
+    std::cerr << "error: out of range access (idx=" << i << ", dim=" << dim << ")" << std::endl;
+    std::exit(1);
+  }
+#endif
+}
+
+void check_range(const int i, const int dim, const int D) {
+#ifdef TENSOR_ENABLE_ASSERTS
+  if (i < 0 || i >= dim) {
+    std::cerr << "error: out of range access [trying to access " << i << "th element in " << D
+              << "th dimension(max range = " << dim - 1 << ")]" << std::endl;
+    std::exit(1);
+  }
+#endif
+}
 
 /*--- forward declarations ---*/
 template <typename T, std::size_t D>
@@ -63,7 +94,7 @@ class tensor_view {
 
     _N = std::accumulate(std::begin(_dims), std::end(_dims), 1, std::multiplies<int>());
 
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
   }
 
   tensor_view(const tensor_view& src)
@@ -72,7 +103,7 @@ class tensor_view {
     _dims = src.dims();
     _strides = src.strides();
 
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
   }
 
   tensor_view(tensor_view&& src)
@@ -81,7 +112,7 @@ class tensor_view {
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
 
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
   }
 
   tensor_view& operator=(const tensor_view& src) {
@@ -89,7 +120,7 @@ class tensor_view {
     _N = src.N();
     _dims = src.dims();
     _strides = src.strides();
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
 
     return *this;
   }
@@ -99,15 +130,19 @@ class tensor_view {
     _N = src.N();
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
     return *this;
   }
 
   tensor_extent<T, D - 1>& operator[](int i) {
+    // assert(i >= 0 && i < _dims[D - 1]);
+    check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
 
   const tensor_extent<T, D - 1>& operator[](int i) const {
+    // assert(i >= 0 && i < _dims[D - 1]);
+    check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
 
@@ -155,9 +190,30 @@ class tensor_view {
 
   T& with_indices(const multi_index& indices) {
     // i* strides(3) + j* strides(2) * k* strides(1) + l;
+    for (int i = D - 1; i >= 0; --i) {
+      // assert(indices[i] >= 0 && indices[i] < _dims[i]);
+      check_range(indices[D - 1 - i], _dims[i], i + 1);
+    }
+
     int idx = 0;
-    for (int i = D - 1; i > 0; --i)
+    for (int i = D - 1; i > 0; --i) {
       idx += indices[D - 1 - i] * strides(i);
+    }
+    idx += indices[D - 1];
+    return _data[idx];
+  }
+
+  T with_indices(const multi_index& indices) const {
+    // i* strides(3) + j* strides(2) * k* strides(1) + l;
+    for (int i = D - 1; i >= 0; --i) {
+      // assert(indices[i] >= 0 && indices[i] < _dims[i]);
+      check_range(indices[D - 1 - i], _dims[i], i + 1);
+    }
+
+    int idx = 0;
+    for (int i = D - 1; i > 0; --i) {
+      idx += indices[D - 1 - i] * strides(i);
+    }
     idx += indices[D - 1];
     return _data[idx];
   }
@@ -167,7 +223,12 @@ class tensor_view {
     return with_indices({args...});
   }
 
-  tensor<T, D> to_tensor() {
+  template <typename... Args>
+  T with_indices(Args... args) const {
+    return with_indices({args...});
+  }
+
+  tensor<T, D> to_tensor() const {
     return tensor<T, D>(*this);
   }
 
@@ -245,10 +306,14 @@ class tensor_view<T, 1> {
   }
 
   T& operator[](int i) {
+    // assert(i >= 0 && i < _dims[0]);
+    check_range(i, _dims[0], 1);
     return _data[i];
   }
 
   const T operator[](int i) const {
+    // assert(i >= 0 && i < _dims[0]);
+    check_range(i, _dims[0], 1);
     return _data[i];
   }
 
@@ -299,10 +364,12 @@ class tensor_view<T, 1> {
   }
 
   T& with_indices(const int indices) {
+    // assert(indices >= 0 && indices < _dims[0]);
+    check_range(indices, _dims[0], 1);
     return _data[indices];
   }
 
-  tensor<T, 1> to_tensor() {
+  tensor<T, 1> to_tensor() const {
     return tensor<T, 1>(*this);
   }
 };
@@ -311,7 +378,8 @@ template <typename T, std::size_t D>
 struct tensor_extent {
   tensor_extent<T, D - 1> _extents;
   T* _p;
-  int _stride; // D-1次元の要素数
+  int _dim;    // D次元の要素数
+  int _stride; // D-1次元までの要素数
   mutable int _accum;
 
   inline tensor_extent<T, D>& calc_index(int accum) {
@@ -335,10 +403,12 @@ struct tensor_extent {
   , _extents(p, stride) {}
 
   tensor_extent<T, D - 1>& operator[](int i) {
+    check_range(i, _dim, D);
     return _extents.calc_index(i * _stride + _accum);
   }
 
   const tensor_extent<T, D - 1>& operator[](int i) const {
+    check_range(i, _dim, D);
     return _extents.calc_index(i * _stride + _accum);
   }
 
@@ -346,16 +416,18 @@ struct tensor_extent {
     return _accum;
   }
 
-  void init(T* p, std::vector<int>& strides) {
+  void init(T* p, std::vector<int>& dims, std::vector<int>& strides) {
     _p = p;
+    _dim = dims[D - 1];
     _stride = strides[D - 1];
-    _extents.init(p, strides);
+    _extents.init(p, dims, strides);
   }
 };
 
 template <typename T>
 struct tensor_extent<T, 1> {
   T* _p;
+  int _dim;
   mutable int _accum;
 
   tensor_extent()
@@ -373,14 +445,17 @@ struct tensor_extent<T, 1> {
     return *this;
   }
 
-  void init(T* p, std::vector<int>& strides) {
+  void init(T* p, std::vector<int>& dims, std::vector<int>& strides) {
+    _dim = dims[0];
     _p = p;
   }
 
   inline T& operator[](int i) {
+    check_range(i, _dim, 1);
     return _p[i + _accum];
   }
   inline const T& operator[](int i) const {
+    check_range(i, _dim, 1);
     return _p[i + _accum];
   }
 };
@@ -437,7 +512,7 @@ class tensor {
       _strides[i] = _strides[i + 1] / _dims[i];
     }
 
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
   }
 
   tensor(const tensor_view<T, D>& view)
@@ -451,7 +526,7 @@ class tensor {
     _data = new T[_N];
     std::copy(view.begin(), view.end(), _data);
 
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
   }
 
   tensor(const tensor& src) {
@@ -462,7 +537,7 @@ class tensor {
     _dims = src.dims();
     _strides = src.strides();
 
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
   }
 
   tensor(tensor&& src) {
@@ -474,7 +549,7 @@ class tensor {
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
 
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
   }
 
   tensor& operator=(const tensor& src) {
@@ -487,7 +562,7 @@ class tensor {
     _dims = src.dims();
     _strides = src.strides();
 
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
 
     return *this;
   }
@@ -502,16 +577,18 @@ class tensor {
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
 
-    _extents.init(_data, _strides);
+    _extents.init(_data, _dims, _strides);
 
     return *this;
   }
 
   tensor_extent<T, D - 1>& operator[](int i) {
+    check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
 
   const tensor_extent<T, D - 1>& operator[](int i) const {
+    check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
 
@@ -585,9 +662,13 @@ class tensor {
 
   T& with_indices(const multi_index& indices) {
     // i* strides(3) + j* strides(2) * k* strides(1) + l;
+    for (int i = D - 1; i >= 0; --i)
+      check_range(indices[D - 1 - i], _dims[i], i + 1);
+
     int idx = 0;
-    for (int i = D - 1; i > 0; --i)
+    for (int i = D - 1; i > 0; --i) {
       idx += indices[D - 1 - i] * strides(i);
+    }
     idx += indices[D - 1];
     return _data[idx];
   }
@@ -709,10 +790,12 @@ class tensor<T, 1> {
   }
 
   T& operator[](int i) {
+    check_range(i, _dims[0], 1);
     return _data[i];
   }
 
   const T operator[](int i) const {
+    check_range(i, _dims[0], 1);
     return _data[i];
   }
 
@@ -763,6 +846,7 @@ class tensor<T, 1> {
   }
 
   T& with_indices(const int indices) {
+    check_range(indices, _dims[0], 1);
     return _data[indices];
   }
 
@@ -771,6 +855,7 @@ class tensor<T, 1> {
   }
 };
 
+/*--- typedefs ---*/
 template <typename T>
 using vector = tensor<T, 1>;
 
