@@ -80,12 +80,13 @@ template <typename T, std::size_t D>
 class tensor_view {
  private:
   T* _data; // a pointer to the first data of dimension D
-  int _N;
+  int _num_elements;
   std::vector<int> _dims;    // the num of elements in each dimension
   std::vector<int> _strides; // access strides
   tensor_extent<T, D - 1> _extents;
 
  public:
+  /*--- typedefs ---*/
   typedef std::array<int, D> multi_index;
 
   template <std::size_t _D>
@@ -94,6 +95,7 @@ class tensor_view {
   template <std::size_t _D>
   using fixed_indices = std::array<int, _D>;
 
+  /*--- constructors ---*/
   tensor_view()
   : _data(nullptr)
   , _dims(D)
@@ -107,14 +109,14 @@ class tensor_view {
     std::copy(std::begin(dims), std::end(dims) - size_diff, std::begin(_dims));
     std::copy(std::begin(strides), std::end(strides) - size_diff, std::begin(_strides));
 
-    _N = std::accumulate(std::begin(_dims), std::end(_dims), 1, std::multiplies<int>());
+    _num_elements = std::accumulate(std::begin(_dims), std::end(_dims), 1, std::multiplies<int>());
 
     _extents.init(_data, _dims, _strides);
   }
 
   tensor_view(const tensor_view& src)
   : _data(src.data())
-  , _N(src.N()) {
+  , _num_elements(src.num_elements()) {
     _dims = src.dims();
     _strides = src.strides();
 
@@ -123,16 +125,17 @@ class tensor_view {
 
   tensor_view(tensor_view&& src)
   : _data(src.data())
-  , _N(src.N()) {
+  , _num_elements(src.num_elements()) {
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
 
     _extents.init(_data, _dims, _strides);
   }
 
+  /*--- operators ---*/
   tensor_view& operator=(const tensor_view& src) {
     _data = src.data();
-    _N = src.N();
+    _num_elements = src.num_elements();
     _dims = src.dims();
     _strides = src.strides();
     _extents.init(_data, _dims, _strides);
@@ -142,7 +145,7 @@ class tensor_view {
 
   tensor_view& operator=(tensor_view&& src) {
     _data = src.data();
-    _N = src.N();
+    _num_elements = src.num_elements();
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
     _extents.init(_data, _dims, _strides);
@@ -161,47 +164,30 @@ class tensor_view {
     return _extents.calc_index(i * _strides[D - 1]);
   }
 
-  T* begin() {
-    return _data;
-  }
-  T* end() {
-    return _data + _N;
-  }
+  /*--- member functions ---*/
+  T* begin() { return _data; }
 
-  const T* const begin() const {
-    return _data;
-  }
-  const T* const end() const {
-    return _data + _N;
-  }
+  T* end() { return _data + _num_elements; }
 
-  T*& data() {
-    return _data;
-  }
-  T* const& data() const {
-    return _data;
-  }
+  const T* const begin() const { return _data; }
 
-  int N() const {
-    return _N;
-  }
+  const T* const end() const { return _data + _num_elements; }
 
-  int shape() const {
-    return D;
-  }
-  int shape(const int d) const {
-    return _dims[d - 1];
-  }
-  const std::vector<int>& dims() const {
-    return _dims;
-  }
+  T*& data() { return _data; }
 
-  int strides(const int d) const {
-    return _strides[d];
-  }
-  const std::vector<int>& strides() const {
-    return _strides;
-  }
+  T* const& data() const { return _data; }
+
+  int num_elements() const { return _num_elements; }
+
+  int shape() const { return D; }
+
+  int shape(const int d) const { return _dims[d - 1]; }
+
+  const std::vector<int>& dims() const { return _dims; }
+
+  int strides(const int d) const { return _strides[d]; }
+
+  const std::vector<int>& strides() const { return _strides; }
 
   T& with_indices(const multi_index& indices) {
     // i* strides(3) + j* strides(2) * k* strides(1) + l;
@@ -243,9 +229,7 @@ class tensor_view {
     return with_indices({args...});
   }
 
-  tensor<T, D> to_tensor() const {
-    return tensor<T, D>(*this);
-  }
+  tensor<T, D> to_tensor() const { return tensor<T, D>(*this); }
 
   template <std::size_t _D>
   view<_D> make_view(const fixed_indices<D - _D>& indices) {
@@ -256,24 +240,34 @@ class tensor_view {
     // std::reverse(midx.begin(), midx.end());
     return view<_D>(&with_indices(midx), _dims, _strides);
   }
+
+  int aaa(int i) {
+    switch (i) {
+      case 1: return 1; break;
+      case 2: return 1;
+      case 3: return 1;
+    }
+  }
 };
 
 template <typename T>
 class tensor_view<T, 1> {
  private:
   T* _data;                  // a pointer to the data
-  std::size_t _N;            // total elements of tensor
+  std::size_t _num_elements; // total elements of tensor
   std::vector<int> _dims;    // the num of elements in each dimension
   std::vector<int> _strides; // access strides
   // tensor_extent<T, D - 1> _extents;  // inner struct to calculate index
 
  public:
+  /*--- typedefs ---*/
   typedef T type;
   typedef int multi_index;
 
+  /*--- constructors ---*/
   tensor_view()
   : _data(nullptr)
-  , _N(0)
+  , _num_elements(0)
   , _dims(1)
   , _strides(1) {}
 
@@ -283,28 +277,29 @@ class tensor_view<T, 1> {
   , _dims(1)
   , _strides(1) {
     // std::reverse(_dims.begin(), _dims.end());
-    _N = dims[0];
-    _dims[0] = _N;
+    _num_elements = dims[0];
+    _dims[0] = _num_elements;
     _strides[0] = 1;
   }
 
   tensor_view(const tensor_view& src)
   : _data(src.data())
-  , _N(src.N()) {
+  , _num_elements(src.num_elements()) {
     _dims = src.dims();
     _strides = src.strides();
   }
 
   tensor_view(tensor_view&& src)
   : _data(src.data())
-  , _N(src.N()) {
+  , _num_elements(src.num_elements()) {
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
   }
 
+  /*--- operators ---*/
   tensor_view& operator=(const tensor_view& src) {
     _data = src.data();
-    _N = src.N();
+    _num_elements = src.num_elements();
     _dims = src.dims();
     _strides = src.strides();
 
@@ -313,7 +308,7 @@ class tensor_view<T, 1> {
 
   tensor_view& operator=(tensor_view&& src) {
     _data = src.data();
-    _N = src.N();
+    _num_elements = src.num_elements();
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
 
@@ -332,51 +327,32 @@ class tensor_view<T, 1> {
     return _data[i];
   }
 
-  T* begin() {
-    return _data;
-  }
-  T* end() {
-    return _data + _N;
-  }
+  /*--- member functions ---*/
+  T* begin() { return _data; }
 
-  const T* const begin() const {
-    return _data;
-  }
-  const T* const end() const {
-    return _data + _N;
-  }
+  T* end() { return _data + _num_elements; }
 
-  T*& data() {
-    return _data;
-  }
-  T* const data() const {
-    return _data;
-  }
+  const T* const begin() const { return _data; }
 
-  void fill(T x) {
-    std::fill(_data, _data + _N, x);
-  }
+  const T* const end() const { return _data + _num_elements; }
 
-  int N() const {
-    return _N;
-  }
+  T*& data() { return _data; }
 
-  int shape() const {
-    return 1;
-  }
-  int shape(const int d) const {
-    return _dims[d - 1];
-  }
-  const std::vector<int>& dims() const {
-    return _dims;
-  }
+  T* const data() const { return _data; }
 
-  int strides(const int d) const {
-    return _strides[d];
-  }
-  const std::vector<int>& strides() const {
-    return _strides;
-  }
+  void fill(T x) { std::fill(_data, _data + _num_elements, x); }
+
+  int num_elements() const { return _num_elements; }
+
+  int shape() const { return 1; }
+
+  int shape(const int d) const { return _dims[d - 1]; }
+
+  const std::vector<int>& dims() const { return _dims; }
+
+  int strides(const int d) const { return _strides[d]; }
+
+  const std::vector<int>& strides() const { return _strides; }
 
   T& with_indices(const int indices) {
     // assert(indices >= 0 && indices < _dims[0]);
@@ -384,9 +360,13 @@ class tensor_view<T, 1> {
     return _data[indices];
   }
 
-  tensor<T, 1> to_tensor() const {
-    return tensor<T, 1>(*this);
+  T with_indices(const int indices) const {
+    // assert(indices >= 0 && indices < _dims[0]);
+    check_range(indices, _dims[0], 1);
+    return _data[indices];
   }
+
+  tensor<T, 1> to_tensor() const { return tensor<T, 1>(*this); }
 };
 
 template <typename T, std::size_t D>
@@ -397,6 +377,7 @@ struct tensor_extent {
   int _stride; // D-1次元までの要素数
   mutable int _accum;
 
+  /*--- functions ---*/
   inline tensor_extent<T, D>& calc_index(int accum) {
     _accum = accum;
     return *this;
@@ -427,9 +408,7 @@ struct tensor_extent {
     return _extents.calc_index(i * _stride + _accum);
   }
 
-  int accum() const {
-    return _accum;
-  }
+  int accum() const { return _accum; }
 
   void init(T* p, std::vector<int>& dims, std::vector<int>& strides) {
     _p = p;
@@ -445,6 +424,7 @@ struct tensor_extent<T, 1> {
   int _dim;
   mutable int _accum;
 
+  /*--- functions ---*/
   tensor_extent()
   : _p(nullptr) {}
   tensor_extent(T* p, int stride)
@@ -469,6 +449,7 @@ struct tensor_extent<T, 1> {
     check_range(i, _dim, 1);
     return _p[i + _accum];
   }
+
   inline const T& operator[](int i) const {
     check_range(i, _dim, 1);
     return _p[i + _accum];
@@ -479,12 +460,13 @@ template <typename T, std::size_t D>
 class tensor {
  private:
   T* _data;                         // a pointer to the data
-  std::size_t _N;                   // total elements of tensor
+  std::size_t _num_elements;        // total elements of tensor
   std::vector<int> _dims;           // the num of elements in each dimension
   std::vector<int> _strides;        // access strides
   tensor_extent<T, D - 1> _extents; // inner struct to calculate index
 
  public:
+  /*--- typedefs ---*/
   typedef T type;
   typedef std::array<int, D> multi_index;
 
@@ -494,7 +476,7 @@ class tensor {
   template <std::size_t _D>
   using fixed_indices = std::array<int, _D>;
 
-  // default constructor
+  /*--- constructors ---*/
   tensor()
   : _data(nullptr)
   , _dims(D)
@@ -519,10 +501,10 @@ class tensor {
     }
     std::reverse(_dims.begin(), _dims.end());
 
-    _N = std::accumulate(_dims.begin(), _dims.end(), 1, std::multiplies<int>());
-    _data = new T[_N];
+    _num_elements = std::accumulate(_dims.begin(), _dims.end(), 1, std::multiplies<int>());
+    _data = new T[_num_elements];
 
-    _strides[D - 1] = _N / _dims[D - 1];
+    _strides[D - 1] = _num_elements / _dims[D - 1];
     for (int i = D - 2; i >= 0; i--) {
       _strides[i] = _strides[i + 1] / _dims[i];
     }
@@ -534,19 +516,19 @@ class tensor {
   : _data(nullptr)
   , _dims(D)
   , _strides(D) {
-    _N = view.N();
+    _num_elements = view.num_elements();
     _dims = view.dims();
     _strides = view.strides();
 
-    _data = new T[_N];
+    _data = new T[_num_elements];
     std::copy(view.begin(), view.end(), _data);
 
     _extents.init(_data, _dims, _strides);
   }
 
   tensor(const tensor& src) {
-    _N = src.N();
-    _data = new T[_N];
+    _num_elements = src.num_elements();
+    _data = new T[_num_elements];
     std::copy(src.begin(), src.end(), _data);
 
     _dims = src.dims();
@@ -556,7 +538,7 @@ class tensor {
   }
 
   tensor(tensor&& src) {
-    _N = src.N();
+    _num_elements = src.num_elements();
     _data = src.data();
     src.data() = nullptr;
     // std::copy(src.begin(), src.end(), _data);
@@ -567,11 +549,12 @@ class tensor {
     _extents.init(_data, _dims, _strides);
   }
 
+  /*--- operators ---*/
   tensor& operator=(const tensor& src) {
     delete[] _data;
 
-    _N = src.N();
-    _data = new T[_N];
+    _num_elements = src.num_elements();
+    _data = new T[_num_elements];
     std::copy(src.begin(), src.end(), _data);
 
     _dims = src.dims();
@@ -585,7 +568,7 @@ class tensor {
   tensor& operator=(tensor&& src) {
     delete[] _data;
 
-    _N = src.N();
+    _num_elements = src.num_elements();
     _data = src.data();
     // std::copy(src.begin(), src.end(), _data);
 
@@ -607,34 +590,22 @@ class tensor {
     return _extents.calc_index(i * _strides[D - 1]);
   }
 
-  T* begin() {
-    return _data;
-  }
-  T* end() {
-    return _data + _N;
-  }
+  /*--- member functions ---*/
+  T* begin() { return _data; }
 
-  const T* const begin() const {
-    return _data;
-  }
-  const T* const end() const {
-    return _data + _N;
-  }
+  T* end() { return _data + _num_elements; }
 
-  T*& data() {
-    return _data;
-  }
-  const T* const data() const {
-    return _data;
-  }
+  const T* const begin() const { return _data; }
 
-  void fill(T x) {
-    std::fill(_data, _data + _N, x);
-  }
+  const T* const end() const { return _data + _num_elements; }
 
-  int N() const {
-    return _N;
-  }
+  T*& data() { return _data; }
+
+  const T* const data() const { return _data; }
+
+  void fill(T x) { std::fill(_data, _data + _num_elements, x); }
+
+  int num_elements() const { return _num_elements; }
 
   void reshape(const std::array<int, D>& shapes) {
     if (std::find(std::begin(shapes), std::end(shapes), 0) != std::end(shapes)) {
@@ -642,38 +613,32 @@ class tensor {
       std::exit(1);
     }
 
-    _N = std::accumulate(std::begin(shapes), std::end(shapes), 1, std::multiplies<int>());
+    _num_elements =
+        std::accumulate(std::begin(shapes), std::end(shapes), 1, std::multiplies<int>());
     // for (int i = 0; i < D; i++) _dims[i] = shapes[i];
 
     std::copy(std::begin(shapes), std::end(shapes), std::begin(_dims));
     std::reverse(std::begin(_dims), std::end(_dims));
 
-    _strides[D - 1] = _N / _dims[D - 1];
+    _strides[D - 1] = _num_elements / _dims[D - 1];
     for (int i = D - 2; i >= 0; i--) {
       _strides[i] = _strides[i + 1] / _dims[i];
     }
 
     delete[] _data;
-    _data = new T[_N];
+    _data = new T[_num_elements];
     _extents.init(_data, _strides);
   }
 
-  int shape() const {
-    return D;
-  }
-  int shape(const int d) const {
-    return _dims[d - 1];
-  }
-  const std::vector<int>& dims() const {
-    return _dims;
-  }
+  int shape() const { return D; }
 
-  int strides(const int d) const {
-    return _strides[d];
-  }
-  const std::vector<int>& strides() const {
-    return _strides;
-  }
+  int shape(const int d) const { return _dims[d - 1]; }
+
+  const std::vector<int>& dims() const { return _dims; }
+
+  int strides(const int d) const { return _strides[d]; }
+
+  const std::vector<int>& strides() const { return _strides; }
 
   T& with_indices(const multi_index& indices) {
     // i* strides(3) + j* strides(2) * k* strides(1) + l;
@@ -703,21 +668,20 @@ class tensor {
     return view<_D>(&with_indices(midx), _dims, _strides);
   }
 
-  ~tensor() {
-    delete[] _data;
-  }
+  ~tensor() { delete[] _data; }
 };
 
 template <typename T>
 class tensor<T, 1> {
  private:
   T* _data;                  // a pointer to the data
-  std::size_t _N;            // total elements of tensor
+  std::size_t _num_elements; // total elements of tensor
   std::vector<int> _dims;    // the num of elements in each dimension
   std::vector<int> _strides; // access strides
   // tensor_extent<T, D - 1> _extents;  // inner struct to calculate index
 
  public:
+  /*--- typedefs ---*/
   typedef T type;
   typedef int multi_index;
 
@@ -740,15 +704,15 @@ class tensor<T, 1> {
     }
     // std::reverse(_dims.begin(), _dims.end());
 
-    _N = d;
-    _data = new T[_N];
-    _dims[0] = _N;
+    _num_elements = d;
+    _data = new T[_num_elements];
+    _dims[0] = _num_elements;
     _strides[0] = 1;
   }
 
   tensor(const tensor& src) {
-    _N = src.N();
-    _data = new T[_N];
+    _num_elements = src.num_elements();
+    _data = new T[_num_elements];
     std::copy(src.begin(), src.end(), _data);
 
     _dims = src.dims();
@@ -759,16 +723,16 @@ class tensor<T, 1> {
   : _data(nullptr)
   , _dims(1)
   , _strides(1) {
-    _N = view.N();
+    _num_elements = view.num_elements();
     _dims = view.dims();
     _strides = view.strides();
 
-    _data = new T[_N];
+    _data = new T[_num_elements];
     std::copy(std::begin(view), std::end(view), _data);
   }
 
   tensor(tensor&& src) {
-    _N = src.N();
+    _num_elements = src.num_elements();
     _data = src.data();
     src.data() = nullptr;
     // std::copy(src.begin(), src.end(), _data);
@@ -780,8 +744,8 @@ class tensor<T, 1> {
   tensor& operator=(const tensor& src) {
     delete[] _data;
 
-    _N = src.N();
-    _data = new T[_N];
+    _num_elements = src.num_elements();
+    _data = new T[_num_elements];
     std::copy(src.begin(), src.end(), _data);
 
     _dims = src.dims();
@@ -793,7 +757,7 @@ class tensor<T, 1> {
   tensor& operator=(tensor&& src) {
     delete[] _data;
 
-    _N = src.N();
+    _num_elements = src.num_elements();
     _data = src.data();
     src.data() = nullptr;
     // std::copy(src.begin(), src.end(), _data);
@@ -814,60 +778,38 @@ class tensor<T, 1> {
     return _data[i];
   }
 
-  T* begin() {
-    return _data;
-  }
-  T* end() {
-    return _data + _N;
-  }
+  T* begin() { return _data; }
 
-  const T* const begin() const {
-    return _data;
-  }
-  const T* const end() const {
-    return _data + _N;
-  }
+  T* end() { return _data + _num_elements; }
 
-  T*& data() {
-    return _data;
-  }
-  const T* const data() const {
-    return _data;
-  }
+  const T* const begin() const { return _data; }
 
-  void fill(T x) {
-    std::fill(_data, _data + _N, x);
-  }
+  const T* const end() const { return _data + _num_elements; }
 
-  int N() const {
-    return _N;
-  }
+  T*& data() { return _data; }
 
-  int shape() const {
-    return 1;
-  }
-  int shape(const int d) const {
-    return _dims[d - 1];
-  }
-  const std::vector<int>& dims() const {
-    return _dims;
-  }
+  const T* const data() const { return _data; }
 
-  int strides(const int d) const {
-    return _strides[d];
-  }
-  const std::vector<int>& strides() const {
-    return _strides;
-  }
+  void fill(T x) { std::fill(_data, _data + _num_elements, x); }
+
+  int num_elements() const { return _num_elements; }
+
+  int shape() const { return 1; }
+
+  int shape(const int d) const { return _dims[d - 1]; }
+
+  const std::vector<int>& dims() const { return _dims; }
+
+  int strides(const int d) const { return _strides[d]; }
+
+  const std::vector<int>& strides() const { return _strides; }
 
   T& with_indices(const int indices) {
     check_range(indices, _dims[0], 1);
     return _data[indices];
   }
 
-  ~tensor() {
-    delete[] _data;
-  }
+  ~tensor() { delete[] _data; }
 };
 
 /*--- typedefs ---*/

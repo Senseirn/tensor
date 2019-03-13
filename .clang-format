@@ -40,7 +40,7 @@ AllowShortCaseLabelsOnASingleLine: true
 # SFS_Inline (in configuration: Inline) Only merge functions defined inside a class.
 # SFS_Empty (in configuration: Empty) Only merge empty functions.
 # SFS_All (in configuration: All) Merge all functions fitting on a single line.
-AllowShortFunctionsOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: All
 
 # If true, if (a) return; can be put on a single line.
 #AllowShortIfStatementsOnASingleLine: false
@@ -242,3 +242,5 @@ BinPackParameters: false
 
 ExperimentalAutoDetectBinPacking: false
 AllowAllParametersOfDeclarationOnNextLine: false
+
+AllowShortCaseLabelsOnASingleLine: true
