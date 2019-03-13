@@ -1,7 +1,12 @@
 #pragma once
 
-/* Configuration MACRO:
-      TENSOR_DISABLE_ASSERTS
+/* By default, range check function is disabled.
+   to enable the function,
+   you should define the following macro
+*/
+
+/*  Configuration MACRO:
+      TENSOR_ENABLE_ASSERTS
         disable range check when access to elements.
         (cause performace overhead)
 */
