@@ -13,13 +13,13 @@
  *  高速な計算が行える。
  */
 
-#include <chrono>
 #include "tensor.h"
+#include <chrono>
 
 int main(int argc, char* argv[]) {
   using namespace rnz;
   using namespace std::chrono;
-  // const int N = std::atoi(argv[1]);
+  const int N = std::atoi(argv[1]);
 
   /*
 
@@ -152,31 +152,19 @@ int main(int argc, char* argv[]) {
   std::cout << "here" << std::endl;
   */
 
-  const int N = 2;
   tensor<float, 4> A{N, N, N, N};
 
   long x = 0;
 
   using namespace std::chrono;
   auto st = system_clock::now();
-  for (int i = 0; i < A.shape(4); i++)
-    for (int j = 0; j < A.shape(3); j++)
-      for (int k = 0; k < A.shape(2); k++)
-        for (int l = 0; l < A.shape(1); l++)
-          // A.data()[i * A.strides(3) + j * A.strides(2) + k * A.strides(1)
-          // l] =
-          //     x++;
-          // A.with_indices(i, j, k, l) = x++;
-          A[i][j][k][l] = x++;
+
   auto end = system_clock::now();
-  auto sum = std::accumulate(A.begin(), A.end(), 0);
-  std::cout << "time: "
-            << duration_cast<milliseconds>(end - st).count() / 1000.f
-            << std::endl;
+  const auto& partial = A.make_view<1>({0, 0, 0});
+  auto sum = std::accumulate(partial.begin(), partial.end(), 0);
+  std::cout << "time: " << duration_cast<milliseconds>(end - st).count() / 1000.f << std::endl;
   std::cout << "sum: " << sum << std::endl;
 
-  auto sub_A = A.make_view<3>({0}).to_tensor();
-  std::cout << A.N() << std::endl;
-
-  auto subsub_A = sub_A.make_view<2>({1}).to_tensor();
+  auto tt = make_tensor<float, 2>({3, 2});
+  auto ttv = tt.make_view<2>({});
 }
