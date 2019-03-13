@@ -15,9 +15,31 @@
 
 #include "tensor.h"
 #include <chrono>
+#include <cmath>
 
 int main(int argc, char* argv[]) {
   using namespace rnz;
   using namespace std::chrono;
-  const int N = std::atoi(argv[1]);
+
+  std::cout << std::numeric_limits<std::size_t>::max() << std::endl;
+  std::cout << std::numeric_limits<long>::max() << std::endl;
+  std::cout << 200 * 256 * 256 * 512L << std::endl;
+
+  tensor<float, 2> A, B, C;
+  A.reshape({2, 2});
+  B.reshape({2, 2});
+  C.reshape({2, 2});
+
+  std::iota(A.begin(), A.end(), 1);
+  std::iota(B.begin(), B.end(), 1);
+  C.fill(0.f);
+
+  using itr_t = tensor<float, 2>::index;
+  for (itr_t i = 0; i < A.shape(2); i++)
+    for (itr_t j = 0; j < A.shape(1); j++)
+      for (itr_t k = 0; k < A.shape(1); k++)
+        C[i][j] += A[i][k] * B[k][j];
+
+  auto sum = std::accumulate(C.begin(), C.end(), 0.0);
+  std::cout << sum << std::endl;
 }
