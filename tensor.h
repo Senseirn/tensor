@@ -48,6 +48,11 @@
 
 namespace rnz {
 
+template <typename T>
+T partial_accumlate(const T x) {
+  static thread_local T a;
+}
+
 /*--- check_range() ---*/
 template <typename T1, typename T2>
 void check_range(const T1 i, const T2 dim) {
@@ -81,7 +86,7 @@ class tensor_view;
 /*--- functions ---*/
 
 // a helper function returning a tensor object.
-template <typename T, std::size_t D, typename INTERNAL_TYPE = std::size_t>
+template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
 tensor<T, D, INTERNAL_TYPE> make_tensor(const std::initializer_list<INTERNAL_TYPE>& initialzier) {
   return tensor<T, D, INTERNAL_TYPE>(initialzier);
 }
@@ -100,7 +105,7 @@ class tensor_view {
  public:
   /*--- typedefs ---*/
   typedef T value_type;
-  typedef std::array<int, D> multi_index;
+  typedef std::array<_internal_t, D> multi_index;
   typedef _internal_t index;
 
   template <std::size_t _D>
@@ -160,12 +165,12 @@ class tensor_view {
     return *this;
   }
 
-  tensor_extent<T, D - 1, _internal_t>& operator[](int i) {
+  tensor_extent<T, D - 1, _internal_t>& operator[](const _internal_t i) {
     check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
 
-  const tensor_extent<T, D - 1, _internal_t>& operator[](int i) const {
+  const tensor_extent<T, D - 1, _internal_t>& operator[](const _internal_t i) const {
     check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
@@ -187,11 +192,11 @@ class tensor_view {
 
   _internal_t shape() const { return D; }
 
-  _internal_t shape(const unsigned int d) const { return _dims[d - 1]; }
+  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
 
-  _internal_t strides(const unsigned int d) const { return _strides[d]; }
+  _internal_t strides(const _internal_t d) const { return _strides[d]; }
 
   const std::vector<_internal_t>& strides() const { return _strides; }
 
@@ -229,6 +234,18 @@ class tensor_view {
     return with_indices({args...});
   }
 
+  template <typename... Args>
+  T& operator()(Args... args) {
+    static_assert(sizeof...(args) == D, "error: dimension miss-match");
+    return with_indices({static_cast<_internal_t>(args)...});
+  }
+
+  template <typename... Args>
+  T operator()(Args... args) const {
+    static_assert(sizeof...(args) == D, "error: dimension miss-match");
+    return with_indices({static_cast<_internal_t>(args)...});
+  }
+
   tensor<T, D, _internal_t> to_tensor() const { return tensor<T, D, _internal_t>(*this); }
 
   template <std::size_t _D>
@@ -254,7 +271,7 @@ class tensor_view<T, 1, INTERNAL_TYPE> {
  public:
   /*--- typedefs ---*/
   typedef T value_type;
-  typedef unsigned int multi_index;
+  typedef _internal_t multi_index;
   typedef _internal_t index;
 
   /*--- constructors ---*/
@@ -306,12 +323,12 @@ class tensor_view<T, 1, INTERNAL_TYPE> {
     return *this;
   }
 
-  T& operator[](const unsigned int i) {
+  T& operator[](const _internal_t i) {
     check_range(i, _dims[0], 1);
     return _data[i];
   }
 
-  const T operator[](const unsigned int i) const {
+  const T operator[](const _internal_t i) const {
     check_range(i, _dims[0], 1);
     return _data[i];
   }
@@ -335,20 +352,30 @@ class tensor_view<T, 1, INTERNAL_TYPE> {
 
   _internal_t shape() const { return 1; }
 
-  _internal_t shape(const unsigned int d) const { return _dims[d - 1]; }
+  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
 
-  _internal_t strides(const unsigned int d) const { return _strides[d]; }
+  _internal_t strides(const _internal_t d) const { return _strides[d]; }
 
   const std::vector<_internal_t>& strides() const { return _strides; }
 
-  T& with_indices(const unsigned int indices) {
+  T& with_indices(const _internal_t indices) {
     check_range(indices, _dims[0], 1);
     return _data[indices];
   }
 
-  T with_indices(const unsigned int indices) const {
+  T with_indices(const _internal_t indices) const {
+    check_range(indices, _dims[0], 1);
+    return _data[indices];
+  }
+
+  T& operator()(const _internal_t indices) {
+    check_range(indices, _dims[0], 1);
+    return _data[indices];
+  }
+
+  T operator()(const _internal_t indices) const {
     check_range(indices, _dims[0], 1);
     return _data[indices];
   }
@@ -386,12 +413,12 @@ struct tensor_extent {
   , _stride(stride)
   , _extents(p, stride) {}
 
-  tensor_extent<T, D - 1, _internal_t>& operator[](const unsigned int i) {
+  tensor_extent<T, D - 1, _internal_t>& operator[](const _internal_t i) {
     check_range(i, _dim, D);
     return _extents.calc_index(i * _stride + _accum);
   }
 
-  const tensor_extent<T, D - 1, _internal_t>& operator[](const unsigned int i) const {
+  const tensor_extent<T, D - 1, _internal_t>& operator[](const _internal_t i) const {
     check_range(i, _dim, D);
     return _extents.calc_index(i * _stride + _accum);
   }
@@ -434,12 +461,12 @@ struct tensor_extent<T, 1, INTERNAL_TYPE> {
     _p = p;
   }
 
-  inline T& operator[](const unsigned int i) {
+  inline T& operator[](const _internal_t i) {
     check_range(i, _dim, 1);
     return _p[i + _accum];
   }
 
-  inline const T& operator[](const unsigned int i) const {
+  inline const T& operator[](const _internal_t i) const {
     check_range(i, _dim, 1);
     return _p[i + _accum];
   }
@@ -458,15 +485,15 @@ class tensor {
  public:
   /*--- public typedefs ---*/
   typedef T value_type;
-  typedef std::array<unsigned int, D> multi_index;
+  typedef std::array<_internal_t, D> multi_index;
 
   template <std::size_t _D>
   using view = tensor_view<T, _D, _internal_t>;
 
   template <std::size_t _D>
-  using fixed_indices = std::array<unsigned int, _D>;
+  using fixed_indices = std::array<_internal_t, _D>;
 
-  typedef std::size_t index;
+  typedef _internal_t index;
 
   typedef _internal_t itype;
 
@@ -555,12 +582,12 @@ class tensor {
     return *this;
   }
 
-  tensor_extent<T, D - 1, _internal_t>& operator[](const unsigned int i) {
+  tensor_extent<T, D - 1, _internal_t>& operator[](const _internal_t i) {
     check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
 
-  const tensor_extent<T, D - 1, _internal_t>& operator[](const unsigned int i) const {
+  const tensor_extent<T, D - 1, _internal_t>& operator[](const _internal_t i) const {
     check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
   }
@@ -602,11 +629,11 @@ class tensor {
 
   _internal_t shape() const { return D; }
 
-  _internal_t shape(const int d) const { return _dims[d - 1]; }
+  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
 
-  _internal_t strides(const unsigned int d) const { return _strides[d]; }
+  _internal_t strides(const _internal_t d) const { return _strides[d]; }
 
   const std::vector<_internal_t>& strides() const { return _strides; }
 
@@ -623,7 +650,37 @@ class tensor {
 
   template <typename... Args>
   T& with_indices(Args... args) {
-    return with_indices({args...});
+    static_assert(sizeof...(args) == D, "error: dimension miss-match");
+    return with_indices({static_cast<_internal_t>(args)...});
+  }
+
+  template <typename... Args>
+  T& operator()(Args... args) {
+    static_assert(sizeof...(args) == D, "error: dimension miss-match");
+    return with_indices({static_cast<_internal_t>(args)...});
+  }
+
+  T with_indices(const multi_index& indices) const {
+    for (int i = D - 1; i >= 0; --i)
+      check_range(indices[D - 1 - i], _dims[i], i + 1);
+    _internal_t idx = 0;
+    for (int i = D - 1; i > 0; --i) {
+      idx += indices[D - 1 - i] * strides(i);
+    }
+    idx += indices[D - 1];
+    return _data[idx];
+  }
+
+  template <typename... Args>
+  T with_indices(Args... args) const {
+    static_assert(sizeof...(args) == D, "error: dimension miss-match");
+    return with_indices({static_cast<_internal_t>(args)...});
+  }
+
+  template <typename... Args>
+  T operator()(Args... args) const {
+    static_assert(sizeof...(args) == D, "error: dimension miss-match");
+    return with_indices({static_cast<_internal_t>(args)...});
   }
 
   template <std::size_t _D>
@@ -650,7 +707,7 @@ class tensor<T, 1, INTERNAL_TYPE> {
  public:
   /*--- public typedefs ---*/
   typedef T type;
-  typedef unsigned int multi_index;
+  typedef _internal_t multi_index;
   typedef _internal_t index;
 
   // default constructor
@@ -724,12 +781,12 @@ class tensor<T, 1, INTERNAL_TYPE> {
     return *this;
   }
 
-  T& operator[](const unsigned int i) {
+  T& operator[](const _internal_t i) {
     check_range(i, _dims[0], 1);
     return _data[i];
   }
 
-  const T operator[](const unsigned int i) const {
+  const T operator[](const _internal_t i) const {
     check_range(i, _dims[0], 1);
     return _data[i];
   }
@@ -752,15 +809,30 @@ class tensor<T, 1, INTERNAL_TYPE> {
 
   _internal_t shape() const { return 1; }
 
-  _internal_t shape(const unsigned int d) const { return _dims[d - 1]; }
+  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
 
-  _internal_t strides(const unsigned int d) const { return _strides[d]; }
+  _internal_t strides(const _internal_t d) const { return _strides[d]; }
 
   const std::vector<_internal_t>& strides() const { return _strides; }
 
-  T& with_indices(const unsigned int indices) {
+  T& with_indices(const _internal_t indices) {
+    check_range(indices, _dims[0], 1);
+    return _data[indices];
+  }
+
+  T with_indices(const _internal_t indices) const {
+    check_range(indices, _dims[0], 1);
+    return _data[indices];
+  }
+
+  T& operator()(const _internal_t indices) {
+    check_range(indices, _dims[0], 1);
+    return _data[indices];
+  }
+
+  T operator()(const _internal_t indices) const {
     check_range(indices, _dims[0], 1);
     return _data[indices];
   }
@@ -769,7 +841,7 @@ class tensor<T, 1, INTERNAL_TYPE> {
 };
 
 /*--- typedefs ---*/
-template <typename T, typename INTERNAL_TYPE>
+template <typename T, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
 using vector = tensor<T, 1, INTERNAL_TYPE>;
 
 } // namespace rnz

@@ -25,25 +25,34 @@ int main(int argc, char* argv[]) {
   std::cout << std::numeric_limits<long>::max() << std::endl;
   std::cout << 1 * 256 * 256 * 512L << std::endl;
 
+  const int N = 512;
+
   tensor<float, 2, unsigned int> A, B, C;
-  A.reshape({2, 2});
-  B.reshape({2, 2});
-  C.reshape({2, 2});
+  A.reshape({N, N});
+  B.reshape({N, N});
+  C.reshape({N, N});
 
   std::iota(A.begin(), A.end(), 1);
   std::iota(B.begin(), B.end(), 1);
   C.fill(0.f);
 
-  using itr_t = tensor<float, 2>::index;
+  auto st = std::chrono::system_clock::now();
+  using itr_t = decltype(A)::index;
   for (itr_t i = 0; i < A.shape(2); i++)
-    for (itr_t j = 0; j < A.shape(1); j++)
-      for (itr_t k = 0; k < A.shape(1); k++)
-        C[i][j] += A[i][k] * B[k][j];
+    for (itr_t k = 0; k < A.shape(1); k++)
+      for (itr_t j = 0; j < A.shape(1); j++)
+        C.with_indices(i, j) += A.with_indices(i, k) * B.with_indices(k, j);
+  // C[i][j] += A[i][k] * B[k][j];
+  auto end = std::chrono::system_clock::now();
 
   auto sum = std::accumulate(C.begin(), C.end(), 0.0);
   std::cout << sum << std::endl;
+  std::cout << duration_cast<milliseconds>(end - st).count() / 1000.f << std::endl;
 
   std::cout << sizeof(tensor<float, 2, std::size_t>::itype) << std::endl;
   std::cout << sizeof(tensor<float, 2, int>) << std::endl;
   std::cout << sizeof(tensor<float, 2>) << std::endl;
+
+  const auto& a = A.make_view<1>({0});
+  std::cout << a(1) << std::endl;
 }
