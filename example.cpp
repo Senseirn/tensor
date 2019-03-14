@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
   std::cout << std::numeric_limits<long>::max() << std::endl;
   std::cout << 1 * 256 * 256 * 512L << std::endl;
 
-  const int N = 512;
+  const int N = 51;
 
   tensor<float, 2, unsigned int> A, B, C;
   A.reshape({N, N});
@@ -55,4 +55,10 @@ int main(int argc, char* argv[]) {
 
   const auto& a = A.make_view<1>({0});
   std::cout << a(1) << std::endl;
+
+  tensor<float, 4> G{4, 3, 2, 1};
+  std::iota(std::begin(G), std::end(G), 1);
+
+  auto H = tensor_cast<3>(G);
+  H.as_shape_of({4, 3, 2});
 }

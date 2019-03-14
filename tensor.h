@@ -48,10 +48,13 @@
 
 namespace rnz {
 
-template <typename T>
-T partial_accumlate(const T x) {
-  static thread_local T a;
-}
+/*--- forward declarations ---*/
+template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
+struct tensor_extent;
+template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
+class tensor;
+template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
+class tensor_view;
 
 /*--- check_range() ---*/
 template <typename T1, typename T2>
@@ -75,13 +78,13 @@ void check_range(const T1 i, const T2 dim, const T3 D) {
 #endif
 }
 
-/*--- forward declarations ---*/
-template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
-struct tensor_extent;
-template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
-class tensor;
-template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
-class tensor_view;
+template <std::size_t D1, typename T, std::size_t D2, typename INTERNAL_TYPE>
+tensor<T, D1, INTERNAL_TYPE> tensor_cast(const tensor<T, D2, INTERNAL_TYPE>& src) {
+  tensor<T, D1, INTERNAL_TYPE> retval;
+  retval.reshape(src.num_elements());
+  std::copy(std::begin(src), std::end(src), std::begin(retval));
+  return retval;
+}
 
 /*--- functions ---*/
 
@@ -609,7 +612,7 @@ class tensor {
 
   _internal_t num_elements() const { return _num_elements; }
 
-  void reshape(const std::array<std::size_t, D>& shapes) {
+  void reshape(const std::array<_internal_t, D>& shapes) {
     if (std::find(std::begin(shapes), std::end(shapes), 0) != std::end(shapes)) {
       std::cerr << "error: 0 is not permitted as a size of dimension" << std::endl;
       std::exit(1);
@@ -625,6 +628,42 @@ class tensor {
     delete[] _data;
     _data = new T[_num_elements];
     _extents.init(_data, _dims, _strides);
+  }
+
+  void reshape(const _internal_t shape) {
+    std::array<_internal_t, D> tmp;
+    tmp.fill(1);
+    tmp[D - 1] = shape;
+    reshape(tmp);
+  }
+
+  void as_shape_of(const std::array<_internal_t, D> shapes) {
+    if (std::find(std::begin(shapes), std::end(shapes), 0) != std::end(shapes)) {
+      std::cerr << "error: 0 is not permitted as a size of dimension" << std::endl;
+      std::exit(1);
+    }
+    auto num_elements =
+        std::accumulate(std::begin(shapes), std::end(shapes), 1, std::multiplies<int>());
+    if (_num_elements != num_elements) {
+      std::cerr << "error: num. of elements miss-match" << std::endl;
+      std::exit(1);
+    }
+    _num_elements = num_elements;
+    std::copy(std::begin(shapes), std::end(shapes), std::begin(_dims));
+    std::reverse(std::begin(_dims), std::end(_dims));
+    _strides[D - 1] = _num_elements / _dims[D - 1];
+    for (int i = D - 2; i >= 0; i--) {
+      _strides[i] = _strides[i + 1] / _dims[i];
+    }
+    _extents.init(_data, _dims, _strides);
+  }
+
+  void as_shape_of(const _internal_t shape) {
+    std::array<_internal_t, D> tmp;
+    tmp.fill(1);
+    tmp[D - 1] = shape;
+
+    as_shape_of(tmp);
   }
 
   _internal_t shape() const { return D; }
