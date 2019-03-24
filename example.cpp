@@ -37,11 +37,11 @@ int main(int argc, char* argv[]) {
   C.fill(0.f);
 
   auto st = std::chrono::system_clock::now();
-  using itr_t = decltype(A)::index;
+  using itr_t = decltype(A)::index_t;
   for (itr_t i = 0; i < A.shape(2); i++)
     for (itr_t k = 0; k < A.shape(1); k++)
       for (itr_t j = 0; j < A.shape(1); j++)
-        C.with_indices(i, j) += A.with_indices(i, k) * B.with_indices(k, j);
+        C(i, j) += A(i, k) * B(k, j);
   // C[i][j] += A[i][k] * B[k][j];
   auto end = std::chrono::system_clock::now();
 
@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
   std::cout << sum << std::endl;
   std::cout << duration_cast<milliseconds>(end - st).count() / 1000.f << std::endl;
 
-  std::cout << sizeof(tensor<float, 2, std::size_t>::itype) << std::endl;
+  std::cout << sizeof(tensor<float, 2>) << std::endl;
   std::cout << sizeof(tensor<float, 2, int>) << std::endl;
   std::cout << sizeof(tensor<float, 2>) << std::endl;
 

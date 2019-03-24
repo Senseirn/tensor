@@ -109,7 +109,7 @@ class tensor_view {
   /*--- typedefs ---*/
   typedef T value_type;
   typedef std::array<_internal_t, D> multi_index;
-  typedef _internal_t index;
+  typedef _internal_t index_t;
 
   template <std::size_t _D>
   using view = tensor_view<T, _D, _internal_t>;
@@ -275,7 +275,7 @@ class tensor_view<T, 1, INTERNAL_TYPE> {
   /*--- typedefs ---*/
   typedef T value_type;
   typedef _internal_t multi_index;
-  typedef _internal_t index;
+  typedef _internal_t index_t;
 
   /*--- constructors ---*/
   tensor_view()
@@ -496,9 +496,7 @@ class tensor {
   template <std::size_t _D>
   using fixed_indices = std::array<_internal_t, _D>;
 
-  typedef _internal_t index;
-
-  typedef _internal_t itype;
+  typedef _internal_t index_t;
 
   /*--- constructors ---*/
   tensor()
@@ -756,7 +754,7 @@ class tensor<T, 1, INTERNAL_TYPE> {
   /*--- public typedefs ---*/
   typedef T type;
   typedef _internal_t multi_index;
-  typedef _internal_t index;
+  typedef _internal_t index_t;
 
   // default constructor
   tensor()
