@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
   std::cout << sizeof(tensor<float, 2, int>) << std::endl;
   std::cout << sizeof(tensor<float, 2>) << std::endl;
 
-  const auto& a = A.make_view<1>({0});
+  const auto& a = A.make_view<1>(0);
   std::cout << a(1) << std::endl;
 
   tensor<float, 4> G{4, 3, 2, 1};
@@ -64,5 +64,12 @@ int main(int argc, char* argv[]) {
 
   tensor<float, 4> tt;
   tt.reshape(4, 3, 2, 1);
-  std::cout << tt.shape(4) << std::endl;
+  std::iota(tt.begin(), tt.end(), 1);
+  std::cout << tt.shape(4) << std::endl << std::endl;
+
+  auto tv = tt.make_view<3>(3);
+  for (auto i = tv.to_index(0); i < tv.shape(3); i++)
+    for (auto j = tv.to_index(0); j < tv.shape(2); j++)
+      for (auto k = tv.to_index(0); k < tv.shape(1); k++)
+        std::cout << tv(i, j, k) << std::endl;
 }

@@ -259,6 +259,16 @@ class tensor_view {
     std::copy(indices.begin(), indices.end(), midx.begin());
     return view<_D>(&with_indices(midx), _dims, _strides);
   }
+
+  template <std::size_t _D, typename... Args>
+  view<_D> make_view(Args... args) {
+    return make_view<_D>({static_cast<_internal_t>(args)...});
+  }
+
+  template <typename type>
+  _internal_t to_index(const type i) {
+    return static_cast<_internal_t>(i);
+  }
 };
 
 template <typename T, typename INTERNAL_TYPE>
@@ -384,6 +394,11 @@ class tensor_view<T, 1, INTERNAL_TYPE> {
   }
 
   tensor<T, 1, _internal_t> to_tensor() const { return tensor<T, 1, _internal_t>(*this); }
+
+  template <typename type>
+  _internal_t to_index(const type i) {
+    return static_cast<_internal_t>(i);
+  }
 };
 
 template <typename T, std::size_t D, typename INTERNAL_TYPE>
@@ -738,6 +753,16 @@ class tensor {
     return view<_D>(&with_indices(midx), _dims, _strides);
   }
 
+  template <std::size_t _D, typename... Args>
+  view<_D> make_view(Args... args) {
+    return make_view<_D>({static_cast<_internal_t>(args)...});
+  }
+
+  template <typename type>
+  _internal_t to_index(const type i) {
+    return static_cast<_internal_t>(i);
+  }
+
   ~tensor() { delete[] _data; }
 };
 
@@ -881,6 +906,11 @@ class tensor<T, 1, INTERNAL_TYPE> {
   T operator()(const _internal_t indices) const {
     check_range(indices, _dims[0], 1);
     return _data[indices];
+  }
+
+  template <typename type>
+  _internal_t to_index(const type i) {
+    return static_cast<_internal_t>(i);
   }
 
   ~tensor() { delete[] _data; }
