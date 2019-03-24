@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
   const int N = 51;
 
   tensor<float, 2, unsigned int> A, B, C;
-  A.reshape({N, N});
+  A.reshape(N, N);
   B.reshape({N, N});
   C.reshape({N, N});
 
@@ -61,4 +61,8 @@ int main(int argc, char* argv[]) {
 
   auto H = tensor_cast<3>(G);
   H.as_shape_of({4, 3, 2});
+
+  tensor<float, 4> tt;
+  tt.reshape(4, 3, 2, 1);
+  std::cout << tt.shape(4) << std::endl;
 }

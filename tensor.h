@@ -533,6 +533,10 @@ class tensor {
     _extents.init(_data, _dims, _strides);
   }
 
+  template <typename... Args>
+  tensor(Args... args)
+  : tensor({static_cast<_internal_t>(args)...}){};
+
   tensor(const tensor_view<T, D, _internal_t>& view)
   : _data(nullptr)
   , _dims(D)
@@ -635,6 +639,11 @@ class tensor {
     tmp.fill(1);
     tmp[D - 1] = shape;
     reshape(tmp);
+  }
+
+  template <typename... Args>
+  void reshape(Args... args) {
+    reshape({static_cast<_internal_t>(args)...});
   }
 
   void as_shape_of(const std::array<_internal_t, D> shapes) {
