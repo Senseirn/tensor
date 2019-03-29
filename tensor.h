@@ -147,7 +147,7 @@ class tensor_view : public tensor_internal {
   tensor_view(const tensor_view& src)
   : _data(src.data())
   , _num_elements(src.num_elements()) {
-    _dims    = src.dims();
+    _dims = src.dims();
     _strides = src.strides();
     _extents.init(_data, _dims, _strides);
   }
@@ -155,26 +155,26 @@ class tensor_view : public tensor_internal {
   tensor_view(tensor_view&& src)
   : _data(src.data())
   , _num_elements(src.num_elements()) {
-    _dims    = std::move(src.dims());
+    _dims = std::move(src.dims());
     _strides = std::move(src.strides());
     _extents.init(_data, _dims, _strides);
   }
 
   /*--- operators ---*/
   tensor_view& operator=(const tensor_view& src) {
-    _data         = src.data();
+    _data = src.data();
     _num_elements = src.num_elements();
-    _dims         = src.dims();
-    _strides      = src.strides();
+    _dims = src.dims();
+    _strides = src.strides();
     _extents.init(_data, _dims, _strides);
     return *this;
   }
 
   tensor_view& operator=(tensor_view&& src) {
-    _data         = src.data();
+    _data = src.data();
     _num_elements = src.num_elements();
-    _dims         = std::move(src.dims());
-    _strides      = std::move(src.strides());
+    _dims = std::move(src.dims());
+    _strides = std::move(src.strides());
     _extents.init(_data, _dims, _strides);
     return *this;
   }
@@ -315,38 +315,38 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
   , _strides(1) {
     // std::reverse(_dims.begin(), _dims.end());
     _num_elements = dims[0];
-    _dims[0]      = _num_elements;
-    _strides[0]   = 1;
+    _dims[0] = _num_elements;
+    _strides[0] = 1;
   }
 
   tensor_view(const tensor_view& src)
   : _data(src.data())
   , _num_elements(src.num_elements()) {
-    _dims    = src.dims();
+    _dims = src.dims();
     _strides = src.strides();
   }
 
   tensor_view(tensor_view&& src)
   : _data(src.data())
   , _num_elements(src.num_elements()) {
-    _dims    = std::move(src.dims());
+    _dims = std::move(src.dims());
     _strides = std::move(src.strides());
   }
 
   /*--- operators ---*/
   tensor_view& operator=(const tensor_view& src) {
-    _data         = src.data();
+    _data = src.data();
     _num_elements = src.num_elements();
-    _dims         = src.dims();
-    _strides      = src.strides();
+    _dims = src.dims();
+    _strides = src.strides();
     return *this;
   }
 
   tensor_view& operator=(tensor_view&& src) {
-    _data         = src.data();
+    _data = src.data();
     _num_elements = src.num_elements();
-    _dims         = std::move(src.dims());
-    _strides      = std::move(src.strides());
+    _dims = std::move(src.dims());
+    _strides = std::move(src.strides());
     return *this;
   }
 
@@ -462,8 +462,8 @@ struct tensor_extent : public tensor_internal {
   _internal_t accum() const { return _accum; }
 
   void init(T* p, std::vector<_internal_t>& dims, std::vector<_internal_t>& strides) {
-    _p      = p;
-    _dim    = dims[D - 1];
+    _p = p;
+    _dim = dims[D - 1];
     _stride = strides[D - 1];
     _extents.init(p, dims, strides);
   }
@@ -495,7 +495,7 @@ struct tensor_extent<T, 1, INTERNAL_TYPE> : public tensor_internal {
 
   void init(T* p, std::vector<_internal_t>& dims, std::vector<_internal_t>& strides) {
     _dim = dims[0];
-    _p   = p;
+    _p = p;
   }
 
   inline T& operator[](const _internal_t i) {
@@ -560,8 +560,8 @@ class tensor : public tensor_internal {
       std::exit(1);
     }
     std::reverse(_dims.begin(), _dims.end());
-    _num_elements   = std::accumulate(_dims.begin(), _dims.end(), 1, std::multiplies<int>());
-    _data           = new T[_num_elements];
+    _num_elements = std::accumulate(_dims.begin(), _dims.end(), 1, std::multiplies<int>());
+    _data = new T[_num_elements];
     _strides[D - 1] = _num_elements / _dims[D - 1];
     for (int i = D - 2; i >= 0; i--) {
       _strides[i] = _strides[i + 1] / _dims[i];
@@ -578,28 +578,28 @@ class tensor : public tensor_internal {
   , _dims(D)
   , _strides(D) {
     _num_elements = view.num_elements();
-    _dims         = view.dims();
-    _strides      = view.strides();
-    _data         = new T[_num_elements];
+    _dims = view.dims();
+    _strides = view.strides();
+    _data = new T[_num_elements];
     std::copy(view.begin(), view.end(), _data);
     _extents.init(_data, _dims, _strides);
   }
 
   tensor(const tensor& src) {
     _num_elements = src.num_elements();
-    _data         = new T[_num_elements];
+    _data = new T[_num_elements];
     std::copy(src.begin(), src.end(), _data);
-    _dims    = src.dims();
+    _dims = src.dims();
     _strides = src.strides();
     _extents.init(_data, _dims, _strides);
   }
 
   tensor(tensor&& src) {
     _num_elements = src.num_elements();
-    _data         = src.data();
-    src.data()    = nullptr;
-    _dims         = std::move(src.dims());
-    _strides      = std::move(src.strides());
+    _data = src.data();
+    src.data() = nullptr;
+    _dims = std::move(src.dims());
+    _strides = std::move(src.strides());
     _extents.init(_data, _dims, _strides);
   }
 
@@ -607,9 +607,9 @@ class tensor : public tensor_internal {
   tensor& operator=(const tensor& src) {
     delete[] _data;
     _num_elements = src.num_elements();
-    _data         = new T[_num_elements];
+    _data = new T[_num_elements];
     std::copy(src.begin(), src.end(), _data);
-    _dims    = src.dims();
+    _dims = src.dims();
     _strides = src.strides();
     _extents.init(_data, _dims, _strides);
     return *this;
@@ -618,9 +618,9 @@ class tensor : public tensor_internal {
   tensor& operator=(tensor&& src) {
     delete[] _data;
     _num_elements = src.num_elements();
-    _data         = src.data();
-    _dims         = std::move(src.dims());
-    _strides      = std::move(src.strides());
+    _data = src.data();
+    _dims = std::move(src.dims());
+    _strides = std::move(src.strides());
     _extents.init(_data, _dims, _strides);
     return *this;
   }
@@ -834,16 +834,16 @@ class tensor<T, 1, INTERNAL_TYPE> : public tensor_internal {
       std::exit(1);
     }
     _num_elements = d;
-    _data         = new T[_num_elements];
-    _dims[0]      = _num_elements;
-    _strides[0]   = 1;
+    _data = new T[_num_elements];
+    _dims[0] = _num_elements;
+    _strides[0] = 1;
   }
 
   tensor(const tensor& src) {
     _num_elements = src.num_elements();
-    _data         = new T[_num_elements];
+    _data = new T[_num_elements];
     std::copy(src.begin(), src.end(), _data);
-    _dims    = src.dims();
+    _dims = src.dims();
     _strides = src.strides();
   }
 
@@ -852,26 +852,26 @@ class tensor<T, 1, INTERNAL_TYPE> : public tensor_internal {
   , _dims(1)
   , _strides(1) {
     _num_elements = view.num_elements();
-    _dims         = view.dims();
-    _strides      = view.strides();
-    _data         = new T[_num_elements];
+    _dims = view.dims();
+    _strides = view.strides();
+    _data = new T[_num_elements];
     std::copy(std::begin(view), std::end(view), _data);
   }
 
   tensor(tensor&& src) {
     _num_elements = src.num_elements();
-    _data         = src.data();
-    src.data()    = nullptr;
-    _dims         = std::move(src.dims());
-    _strides      = std::move(src.strides());
+    _data = src.data();
+    src.data() = nullptr;
+    _dims = std::move(src.dims());
+    _strides = std::move(src.strides());
   }
 
   tensor& operator=(const tensor& src) {
     delete[] _data;
     _num_elements = src.num_elements();
-    _data         = new T[_num_elements];
+    _data = new T[_num_elements];
     std::copy(src.begin(), src.end(), _data);
-    _dims    = src.dims();
+    _dims = src.dims();
     _strides = src.strides();
     return *this;
   }
@@ -879,10 +879,10 @@ class tensor<T, 1, INTERNAL_TYPE> : public tensor_internal {
   tensor& operator=(tensor&& src) {
     delete[] _data;
     _num_elements = src.num_elements();
-    _data         = src.data();
-    src.data()    = nullptr;
-    _dims         = std::move(src.dims());
-    _strides      = std::move(src.strides());
+    _data = src.data();
+    src.data() = nullptr;
+    _dims = std::move(src.dims());
+    _strides = std::move(src.strides());
 
     return *this;
   }
@@ -970,7 +970,35 @@ class Expr : public tensor_internal {
   : _lhs(lhs)
   , _rhs(rhs) {}
 
-  T eval(const int i) const { return Op::apply(_lhs.eval(i), _rhs.eval(i)); }
+  const L& lhs() { return _lhs; }
+  const R& rhs() { return _rhs; }
+
+  template <typename LL = L,
+            typename RR = R,
+            typename std::enable_if<std::is_convertible<LL, tensor_internal>::value,
+                                    std::nullptr_t>::type = nullptr,
+            typename std::enable_if<std::is_convertible<RR, tensor_internal>::value,
+                                    std::nullptr_t>::type = nullptr>
+  T eval(const int i) const {
+    return Op::apply(_lhs.eval(i), _rhs.eval(i));
+  }
+
+  template <typename LL = L,
+            typename RR = R,
+            typename std::enable_if<std::is_arithmetic<LL>::value, std::nullptr_t>::type = nullptr,
+            typename std::enable_if<std::is_convertible<RR, tensor_internal>::value,
+                                    std::nullptr_t>::type = nullptr>
+  T eval(const int i) const {
+    return Op::apply((T)_lhs, _rhs.eval(i));
+  }
+  template <typename LL = L,
+            typename RR = R,
+            typename std::enable_if<std::is_arithmetic<RR>::value, std::nullptr_t>::type = nullptr,
+            typename std::enable_if<std::is_convertible<LL, tensor_internal>::value,
+                                    std::nullptr_t>::type = nullptr>
+  T eval(const int i) const {
+    return Op::apply(_lhs.eval(i), (T)_rhs);
+  }
   //  T data(const int i) const { return _lhs.data()[i] + _rhs.data()[i]; }
 };
 
@@ -1008,9 +1036,12 @@ struct is_same_template : std::false_type {};
 template <template <typename...> class T>
 struct is_same_template<T, T> : std::true_type {};
 
+/* Plus */
 template <typename L,
           typename R,
           typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr,
+          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Plus, R, typename L::value_type> operator+(const L& lhs, const R& rhs) {
   return Expr<L, Plus, R, typename L::value_type>(lhs, rhs);
@@ -1018,7 +1049,28 @@ Expr<L, Plus, R, typename L::value_type> operator+(const L& lhs, const R& rhs) {
 
 template <typename L,
           typename R,
+          typename std::enable_if<std::is_arithmetic<L>::value, std::nullptr_t>::type = nullptr,
+          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr>
+Expr<L, Plus, R, typename R::value_type> operator+(const L& lhs, const R& rhs) {
+  return Expr<L, Plus, R, typename R::value_type>(lhs, rhs);
+}
+
+template <typename L,
+          typename R,
+          typename std::enable_if<std::is_arithmetic<R>::value, std::nullptr_t>::type = nullptr,
           typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr>
+Expr<L, Plus, R, typename L::value_type> operator+(const L& lhs, const R& rhs) {
+  return Expr<L, Plus, R, typename L::value_type>(lhs, rhs);
+}
+
+/* Minus */
+template <typename L,
+          typename R,
+          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr,
+          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Minus, R, typename L::value_type> operator-(const L& lhs, const R& rhs) {
   return Expr<L, Minus, R, typename L::value_type>(lhs, rhs);
@@ -1026,7 +1078,28 @@ Expr<L, Minus, R, typename L::value_type> operator-(const L& lhs, const R& rhs) 
 
 template <typename L,
           typename R,
+          typename std::enable_if<std::is_arithmetic<L>::value, std::nullptr_t>::type = nullptr,
+          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr>
+Expr<L, Minus, R, typename R::value_type> operator-(const L& lhs, const R& rhs) {
+  return Expr<L, Minus, R, typename R::value_type>(lhs, rhs);
+}
+
+template <typename L,
+          typename R,
+          typename std::enable_if<std::is_arithmetic<R>::value, std::nullptr_t>::type = nullptr,
           typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr>
+Expr<L, Minus, R, typename L::value_type> operator-(const L& lhs, const R& rhs) {
+  return Expr<L, Minus, R, typename L::value_type>(lhs, rhs);
+}
+
+/* Div*/
+template <typename L,
+          typename R,
+          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr,
+          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Div, R, typename L::value_type> operator/(const L& lhs, const R& rhs) {
   return Expr<L, Div, R, typename L::value_type>(lhs, rhs);
@@ -1034,6 +1107,45 @@ Expr<L, Div, R, typename L::value_type> operator/(const L& lhs, const R& rhs) {
 
 template <typename L,
           typename R,
+          typename std::enable_if<std::is_arithmetic<L>::value, std::nullptr_t>::type = nullptr,
+          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr>
+Expr<L, Div, R, typename R::value_type> operator/(const L& lhs, const R& rhs) {
+  return Expr<L, Div, R, typename R::value_type>(lhs, rhs);
+}
+
+template <typename L,
+          typename R,
+          typename std::enable_if<std::is_arithmetic<R>::value, std::nullptr_t>::type = nullptr,
+          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr>
+Expr<L, Div, R, typename L::value_type> operator/(const L& lhs, const R& rhs) {
+  return Expr<L, Div, R, typename L::value_type>(lhs, rhs);
+}
+
+/* Mul */
+template <typename L,
+          typename R,
+          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr,
+          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr>
+Expr<L, Mul, R, typename L::value_type> operator*(const L& lhs, const R& rhs) {
+  return Expr<L, Mul, R, typename L::value_type>(lhs, rhs);
+}
+
+template <typename L,
+          typename R,
+          typename std::enable_if<std::is_arithmetic<L>::value, std::nullptr_t>::type = nullptr,
+          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
+                                  std::nullptr_t>::type = nullptr>
+Expr<L, Mul, R, typename R::value_type> operator*(const L& lhs, const R& rhs) {
+  return Expr<L, Mul, R, typename R::value_type>(lhs, rhs);
+}
+
+template <typename L,
+          typename R,
+          typename std::enable_if<std::is_arithmetic<R>::value, std::nullptr_t>::type = nullptr,
           typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Mul, R, typename L::value_type> operator*(const L& lhs, const R& rhs) {

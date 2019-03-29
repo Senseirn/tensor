@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
         */
   // C[i][j] += A[i][k] * B[k][j];
   // auto ttttt = A + B + J;
-  C = A + B * J;
+  C = A + (2 * (B * J) + 3);
 
   // std::cout << typeid(ttttt).name() << std::endl;
   using itr_t = decltype(C)::index_t;

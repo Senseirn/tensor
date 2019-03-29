@@ -245,4 +245,4 @@ AllowAllParametersOfDeclarationOnNextLine: false
 
 AllowShortCaseLabelsOnASingleLine: true
 
-AlignConsecutiveAssignments: true
+#AlignConsecutiveAssignments: true
