@@ -244,3 +244,5 @@ ExperimentalAutoDetectBinPacking: false
 AllowAllParametersOfDeclarationOnNextLine: false
 
 AllowShortCaseLabelsOnASingleLine: true
+
+AlignConsecutiveAssignments: true
