@@ -21,40 +21,40 @@ int main(int argc, char* argv[]) {
   using namespace rnz;
   using namespace std::chrono;
 
-  std::cout << std::numeric_limits<std::size_t>::max() << std::endl;
-  std::cout << std::numeric_limits<long>::max() << std::endl;
-  std::cout << 1 * 256 * 256 * 512L << std::endl;
+  const int N = 2;
 
-  const int N = 51;
-
-  tensor<float, 2, unsigned int> A, B, C;
+  tensor<float, 2, unsigned int> A, B, C, J;
   A.reshape(N, N);
   B.reshape({N, N});
+  J.reshape({N, N});
   C.reshape({N, N});
 
   std::iota(A.begin(), A.end(), 1);
   std::iota(B.begin(), B.end(), 1);
+  std::iota(J.begin(), J.end(), 1);
   C.fill(0.f);
 
-  auto st = std::chrono::system_clock::now();
+  /*
   using itr_t = decltype(A)::index_t;
   for (itr_t i = 0; i < A.shape(2); i++)
     for (itr_t k = 0; k < A.shape(1); k++)
       for (itr_t j = 0; j < A.shape(1); j++)
         C(i, j) += A(i, k) * B(k, j);
+        */
   // C[i][j] += A[i][k] * B[k][j];
-  auto end = std::chrono::system_clock::now();
+  // auto ttttt = A + B + J;
+  C = A + B * J;
+
+  // std::cout << typeid(ttttt).name() << std::endl;
+  using itr_t = decltype(C)::index_t;
+  for (itr_t i = 0; i < C.shape(2); i++)
+    for (itr_t k = 0; k < C.shape(1); k++)
+      std::cout << C(i, k) << std::endl;
 
   auto sum = std::accumulate(C.begin(), C.end(), 0.0);
   std::cout << sum << std::endl;
-  std::cout << duration_cast<milliseconds>(end - st).count() / 1000.f << std::endl;
-
-  std::cout << sizeof(tensor<float, 2>) << std::endl;
-  std::cout << sizeof(tensor<float, 2, int>) << std::endl;
-  std::cout << sizeof(tensor<float, 2>) << std::endl;
 
   const auto& a = A.make_view<1>(0);
-  std::cout << a(1) << std::endl;
 
   tensor<float, 4> G{4, 3, 2, 1};
   std::iota(std::begin(G), std::end(G), 1);
@@ -65,11 +65,6 @@ int main(int argc, char* argv[]) {
   tensor<float, 4> tt;
   tt.reshape(4, 3, 2, 1);
   std::iota(tt.begin(), tt.end(), 1);
-  std::cout << tt.shape(4) << std::endl << std::endl;
 
   auto tv = tt.make_view<3>(3);
-  for (auto i = tv.to_index(0); i < tv.shape(3); i++)
-    for (auto j = tv.to_index(0); j < tv.shape(2); j++)
-      for (auto k = tv.to_index(0); k < tv.shape(1); k++)
-        std::cout << tv(i, j, k) << std::endl;
 }
