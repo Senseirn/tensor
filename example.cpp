@@ -26,33 +26,34 @@ int main(int argc, char* argv[]) {
   tensor<float, 2, unsigned int> A, B, C, J;
   A.reshape(N, N);
   B.reshape({N, N});
-  J.reshape({N, N});
   C.reshape({N, N});
 
   std::iota(A.begin(), A.end(), 1);
   std::iota(B.begin(), B.end(), 1);
-  std::iota(J.begin(), J.end(), 1);
   C.fill(0.f);
 
-  /*
-  using itr_t = decltype(A)::index_t;
-  for (itr_t i = 0; i < A.shape(2); i++)
-    for (itr_t k = 0; k < A.shape(1); k++)
-      for (itr_t j = 0; j < A.shape(1); j++)
-        C(i, j) += A(i, k) * B(k, j);
-        */
+  tensor<float, 3> K(3, 2, 2);
+  tensor<float, 3> L(3, 2, 2);
+
+  std::iota(K.begin(), K.end(), 1);
+  L.fill(0.f);
+
+  tensor<float, 2> M(2, 2);
+  M = K.make_view<2>(1) + 2;
+
+  using itr_t = decltype(M)::index_t;
+  for (itr_t i = 0; i < M.shape(2); i++)
+    for (itr_t k = 0; k < M.shape(1); k++)
+      std::cout << M(i, k) << std::endl;
   // C[i][j] += A[i][k] * B[k][j];
   // auto ttttt = A + B + J;
-  C = A + (2 * (B * J) + 3);
-
-  // std::cout << typeid(ttttt).name() << std::endl;
-  using itr_t = decltype(C)::index_t;
-  for (itr_t i = 0; i < C.shape(2); i++)
-    for (itr_t k = 0; k < C.shape(1); k++)
-      std::cout << C(i, k) << std::endl;
+  auto st = system_clock::now();
+  C = A * B;
+  auto end = system_clock::now();
 
   auto sum = std::accumulate(C.begin(), C.end(), 0.0);
   std::cout << sum << std::endl;
+  std::cout << duration_cast<milliseconds>(end - st).count() / 1000.f << std::endl;
 
   const auto& a = A.make_view<1>(0);
 
