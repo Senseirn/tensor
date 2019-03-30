@@ -21,14 +21,12 @@ int main(int argc, char* argv[]) {
   using namespace rnz;
   using namespace std::chrono;
 
-  const int N = 2;
-
-  tensor<float*, 1, int> pp;
-
-  tensor<float, 2, unsigned int> A, B, C, J;
-  A.reshape(N, N);
-  B.reshape({N, N});
-  C.reshape({N, N});
+  const int N = 1024 * 3;
+  const int NN = 2;
+  tensor<float, 3, unsigned int> A, B, C, J;
+  A.reshape(NN, N, N);
+  B.reshape({NN, N, N});
+  C.reshape({NN, N, N});
 
   std::iota(A.begin(), A.end(), 1);
   std::iota(B.begin(), B.end(), 1);
@@ -43,14 +41,17 @@ int main(int argc, char* argv[]) {
   tensor<float, 2> M(2, 2);
   M = K.make_view<2>(1) + 2;
 
-  using itr_t = decltype(M)::index_t;
-  for (itr_t i = 0; i < M.shape(2); i++)
-    for (itr_t k = 0; k < M.shape(1); k++)
-      std::cout << M(i, k) << std::endl;
-  // C[i][j] += A[i][k] * B[k][j];
-  // auto ttttt = A + B + J;
   auto st = system_clock::now();
-  C = A * B;
+  using itr_t = decltype(A)::index_t;
+
+  for (itr_t n = 0; n < A.shape<3>(); n++)
+#pragma omp parallel for
+    for (itr_t i = 0; i < A.shape<2>(); i++)
+      for (itr_t k = 0; k < A.shape<1>(); k++)
+        for (itr_t j = 0; j < A.shape<1>(); j++)
+          // C.with_indices({i, j}) += A.with_indices({i, k}) * B.with_indices({k, j});
+          C(n, i, j) += A(n, i, k) * B(n, k, j);
+  auto ttttt = A + B + J;
   auto end = system_clock::now();
 
   auto sum = std::accumulate(C.begin(), C.end(), 0.0);
