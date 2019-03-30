@@ -50,7 +50,10 @@ int main(int argc, char* argv[]) {
       for (itr_t k = 0; k < A.shape<1>(); k++)
         for (itr_t j = 0; j < A.shape<1>(); j++)
           // C.with_indices({i, j}) += A.with_indices({i, k}) * B.with_indices({k, j});
-          C(n, i, j) += A(n, i, k) * B(n, k, j);
+          C.data()[n * C.strides<2>() + i * C.strides<1>() + j] +=
+              A.data()[n * A.strides<2>() + i * A.strides<1>() + k] *
+              B.data()[n * B.strides<2>() + k * B.strides<1>() + j];
+  // C(n, i, j) += A(n, i, k) * B(n, k, j);
   auto ttttt = A + B + J;
   auto end = system_clock::now();
 

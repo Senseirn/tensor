@@ -778,6 +778,11 @@ class tensor<
 
   _internal_t strides(const _internal_t d) const { return _strides[d]; }
 
+  template <std::size_t _D, typename std::enable_if<(_D < D), std::nullptr_t>::type = nullptr>
+  _internal_t strides() {
+    return _strides[_D];
+  }
+
   const std::vector<_internal_t>& strides() const { return _strides; }
 
   T& with_indices(const multi_index& indices) {
