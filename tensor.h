@@ -77,7 +77,10 @@ class tensor_internal {};
 /*--- forward declarations ---*/
 template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
 struct tensor_extent;
-template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
+template <typename T,
+          std::size_t D,
+          typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE,
+          typename = void>
 class tensor;
 template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
 class tensor_view;
@@ -533,7 +536,12 @@ struct tensor_extent<T, 1, INTERNAL_TYPE> : public tensor_internal {
 };
 
 template <typename T, std::size_t D, typename INTERNAL_TYPE>
-class tensor : public tensor_internal {
+class tensor<
+    T,
+    D,
+    INTERNAL_TYPE,
+    typename std::enable_if<std::is_arithmetic<T>::value || std::is_pointer<T>::value, void>::type>
+: public tensor_internal {
  private:
   typedef INTERNAL_TYPE _internal_t;
   T* _data;                                      // a pointer to the data
@@ -821,7 +829,12 @@ class tensor : public tensor_internal {
 };
 
 template <typename T, typename INTERNAL_TYPE>
-class tensor<T, 1, INTERNAL_TYPE> : public tensor_internal {
+class tensor<
+    T,
+    1,
+    INTERNAL_TYPE,
+    typename std::enable_if<std::is_arithmetic<T>::value || std::is_pointer<T>::value, void>::type>
+: public tensor_internal {
  private:
   typedef INTERNAL_TYPE _internal_t;
   T* _data;                          // a pointer to the data

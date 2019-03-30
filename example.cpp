@@ -23,6 +23,8 @@ int main(int argc, char* argv[]) {
 
   const int N = 2;
 
+  tensor<float*, 1, int> pp;
+
   tensor<float, 2, unsigned int> A, B, C, J;
   A.reshape(N, N);
   B.reshape({N, N});
