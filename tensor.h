@@ -458,10 +458,10 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
 template <typename T, std::size_t D, typename INTERNAL_TYPE>
 struct tensor_extent : public tensor_internal {
   typedef INTERNAL_TYPE _internal_t;
-  tensor_extent<T, D - 1, _internal_t> _extents;
   T* _p;
   _internal_t _dim;    // D次元の要素数
   _internal_t _stride; // D-1次元までの要素数
+  tensor_extent<T, D - 1, _internal_t> _extents;
   mutable _internal_t _accum;
 
   //  T eval(const int i) const { return _data[i]; }
@@ -673,7 +673,7 @@ class tensor<
   /*! EXPERIMNET */
   template <typename L, typename Op, typename R>
   tensor& operator=(const Expr<L, Op, R, value_type>& rhs) {
-    for (int i = 0; i < _num_elements; i++)
+    for (int i = 0; i < (int)_num_elements; i++)
       _data[i] = rhs.eval(i);
     return *this;
   }
@@ -742,7 +742,7 @@ class tensor<
     }
     auto num_elements =
         std::accumulate(std::begin(shapes), std::end(shapes), 1, std::multiplies<int>());
-    if (_num_elements != num_elements) {
+    if ((int)_num_elements != num_elements) {
       std::cerr << "error: num. of elements miss-match" << std::endl;
       std::exit(1);
     }
