@@ -1,22 +1,44 @@
-#pragma once
+/*  MIT License
 
-/* By default, range check function is disabled.
-   to enable the function,
-   you should define the following macro
+    Copyright (c) [2019] [Yuta Kambara]
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
-/*  Configuration MACRO:
+/*  Configurable MACROs:
       TENSOR_ENABLE_ASSERTS
-        disable range check when access to elements.
-        (cause performace overhead)
+        - enable range check when access to elements.
+          (cause performance overhead)
+      TENSOR_DEFAULT_INTERNAL_TYPE = T
+        - use T as internal index type.
+          T must be integer type.
+          (default is std::size_t)
 */
+
+#pragma once
 
 /*--- check if the compiler supports C++11 ---*/
 #if __cplusplus < 201103L
 #error Tensor library needs at least a C++11 compliant compiler
 #endif
 
-/*--- if TENSOR_ENABLE_ASSERTS macro is defined ---*/
+/*--- if TENSOR_ENABLE_ASSERTS macro is NOT defined ---*/
 #if not defined(TENSOR_ENABLE_ASSERTS)
 #define NDEBUG
 #endif
@@ -49,6 +71,7 @@
 
 namespace rnz {
 
+/* the bese class of all tensor classes */
 class tensor_internal {};
 
 /*--- forward declarations ---*/
@@ -62,7 +85,7 @@ class tensor_view;
 template <typename L, typename Op, typename R, typename T>
 class Expr;
 
-/*--- check_range() ---*/
+/*--- range check functions ---*/
 template <typename T1, typename T2>
 void check_range(const T1 i, const T2 dim) {
 #ifdef TENSOR_ENABLE_ASSERTS
@@ -957,6 +980,7 @@ using vector = tensor<T, 1, INTERNAL_TYPE>;
 
 } // namespace rnz
 
+/*--- Expression Templates ---*/
 namespace rnz {
 template <typename L, typename Op, typename R, typename T>
 class Expr : public tensor_internal {
@@ -991,6 +1015,7 @@ class Expr : public tensor_internal {
   T eval(const int i) const {
     return Op::apply((T)_lhs, _rhs.eval(i));
   }
+
   template <typename LL = L,
             typename RR = R,
             typename std::enable_if<std::is_arithmetic<RR>::value, std::nullptr_t>::type = nullptr,
