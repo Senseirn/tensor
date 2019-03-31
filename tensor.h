@@ -29,6 +29,9 @@
         - use T as internal index type.
           T must be integer type.
           (default is std::size_t)
+      TENSOR_ENABLE_SIMD
+        - enable simd acceleration.
+          (require compiler supports)
 */
 
 #pragma once
@@ -1134,7 +1137,7 @@ class Expr : public tensor_internal {
   const R& _rhs;
 
   _internal_t _num_elements;
-  const std::vector<_internal_t> _dims;
+  const std::vector<_internal_t>& _dims;
   _internal_t _dimension;
 
  public:
@@ -1148,7 +1151,7 @@ class Expr : public tensor_internal {
 
   template <typename LL = L,
             typename RR = R,
-            typename std::enable_if<(std::is_convertible<LL, tensor_internal>::value &&
+            typename std::enable_if<(std::is_base_of<tensor_internal, LL>::value &&
                                      std::is_arithmetic<RR>::value),
                                     std::nullptr_t>::type = nullptr>
   Expr(const L& lhs, const R& rhs)
@@ -1160,7 +1163,7 @@ class Expr : public tensor_internal {
 
   template <typename LL = L,
             typename RR = R,
-            typename std::enable_if<(std::is_convertible<RR, tensor_internal>::value &&
+            typename std::enable_if<(std::is_base_of<tensor_internal, RR>::value &&
                                      std::is_arithmetic<LL>::value),
                                     std::nullptr_t>::type = nullptr>
   Expr(const L& lhs, const R& rhs)
@@ -1172,8 +1175,8 @@ class Expr : public tensor_internal {
 
   template <typename LL = L,
             typename RR = R,
-            typename std::enable_if<(std::is_convertible<LL, tensor_internal>::value &&
-                                     std::is_convertible<RR, tensor_internal>::value),
+            typename std::enable_if<(std::is_base_of<tensor_internal, LL>::value &&
+                                     std::is_base_of<tensor_internal, RR>::value),
                                     std::nullptr_t>::type = nullptr>
   Expr(const L& lhs, const R& rhs)
   : _lhs(lhs)
@@ -1193,9 +1196,9 @@ class Expr : public tensor_internal {
 
   template <typename LL = L,
             typename RR = R,
-            typename std::enable_if<std::is_convertible<LL, tensor_internal>::value,
+            typename std::enable_if<std::is_base_of<tensor_internal, LL>::value,
                                     std::nullptr_t>::type = nullptr,
-            typename std::enable_if<std::is_convertible<RR, tensor_internal>::value,
+            typename std::enable_if<std::is_base_of<tensor_internal, RR>::value,
                                     std::nullptr_t>::type = nullptr>
   T eval(const int i) const {
     return Op::apply(_lhs.eval(i), _rhs.eval(i));
@@ -1204,7 +1207,7 @@ class Expr : public tensor_internal {
   template <typename LL = L,
             typename RR = R,
             typename std::enable_if<std::is_arithmetic<LL>::value, std::nullptr_t>::type = nullptr,
-            typename std::enable_if<std::is_convertible<RR, tensor_internal>::value,
+            typename std::enable_if<std::is_base_of<tensor_internal, RR>::value,
                                     std::nullptr_t>::type = nullptr>
   T eval(const int i) const {
     return Op::apply((T)_lhs, _rhs.eval(i));
@@ -1213,7 +1216,7 @@ class Expr : public tensor_internal {
   template <typename LL = L,
             typename RR = R,
             typename std::enable_if<std::is_arithmetic<RR>::value, std::nullptr_t>::type = nullptr,
-            typename std::enable_if<std::is_convertible<LL, tensor_internal>::value,
+            typename std::enable_if<std::is_base_of<tensor_internal, LL>::value,
                                     std::nullptr_t>::type = nullptr>
   T eval(const int i) const {
     return Op::apply(_lhs.eval(i), (T)_rhs);
@@ -1266,9 +1269,9 @@ struct Mul {
 template <
     typename L,
     typename R,
-    typename std::enable_if<std::is_convertible<L, tensor_internal>::value, std::nullptr_t>::type =
+    typename std::enable_if<std::is_base_of<tensor_internal, L>::value, std::nullptr_t>::type =
         nullptr,
-    typename std::enable_if<std::is_convertible<R, tensor_internal>::value, std::nullptr_t>::type =
+    typename std::enable_if<std::is_base_of<tensor_internal, R>::value, std::nullptr_t>::type =
         nullptr,
     typename std::enable_if<std::is_same<typename L::_internal_t, typename R::_internal_t>::value,
                             std::nullptr_t>::type = nullptr>
@@ -1279,7 +1282,7 @@ Expr<L, Plus, R, typename L::value_type> operator+(const L& lhs, const R& rhs) {
 template <typename L,
           typename R,
           typename std::enable_if<std::is_arithmetic<L>::value, std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
+          typename std::enable_if<std::is_base_of<tensor_internal, R>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Plus, R, typename R::value_type> operator+(const L& lhs, const R& rhs) {
   return Expr<L, Plus, R, typename R::value_type, typename R::_internal_t>(lhs, rhs);
@@ -1288,7 +1291,7 @@ Expr<L, Plus, R, typename R::value_type> operator+(const L& lhs, const R& rhs) {
 template <typename L,
           typename R,
           typename std::enable_if<std::is_arithmetic<R>::value, std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+          typename std::enable_if<std::is_base_of<tensor_internal, L>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Plus, R, typename L::value_type> operator+(const L& lhs, const R& rhs) {
   return Expr<L, Plus, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
@@ -1298,9 +1301,9 @@ Expr<L, Plus, R, typename L::value_type> operator+(const L& lhs, const R& rhs) {
 template <
     typename L,
     typename R,
-    typename std::enable_if<std::is_convertible<L, tensor_internal>::value, std::nullptr_t>::type =
+    typename std::enable_if<std::is_base_of<tensor_internal, L>::value, std::nullptr_t>::type =
         nullptr,
-    typename std::enable_if<std::is_convertible<R, tensor_internal>::value, std::nullptr_t>::type =
+    typename std::enable_if<std::is_base_of<tensor_internal, R>::value, std::nullptr_t>::type =
         nullptr,
     typename std::enable_if<std::is_same<typename L::_internal_t, typename R::_internal_t>::value,
                             std::nullptr_t>::type = nullptr>
@@ -1311,7 +1314,7 @@ Expr<L, Minus, R, typename L::value_type> operator-(const L& lhs, const R& rhs) 
 template <typename L,
           typename R,
           typename std::enable_if<std::is_arithmetic<L>::value, std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
+          typename std::enable_if<std::is_base_of<tensor_internal, R>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Minus, R, typename R::value_type> operator-(const L& lhs, const R& rhs) {
   return Expr<L, Minus, R, typename R::value_type, typename R::_internal_t>(lhs, rhs);
@@ -1320,7 +1323,7 @@ Expr<L, Minus, R, typename R::value_type> operator-(const L& lhs, const R& rhs) 
 template <typename L,
           typename R,
           typename std::enable_if<std::is_arithmetic<R>::value, std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+          typename std::enable_if<std::is_base_of<tensor_internal, L>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Minus, R, typename L::value_type> operator-(const L& lhs, const R& rhs) {
   return Expr<L, Minus, R, typename L::value_type, typename L::internal_t>(lhs, rhs);
@@ -1330,9 +1333,9 @@ Expr<L, Minus, R, typename L::value_type> operator-(const L& lhs, const R& rhs) 
 template <
     typename L,
     typename R,
-    typename std::enable_if<std::is_convertible<L, tensor_internal>::value, std::nullptr_t>::type =
+    typename std::enable_if<std::is_base_of<tensor_internal, L>::value, std::nullptr_t>::type =
         nullptr,
-    typename std::enable_if<std::is_convertible<R, tensor_internal>::value, std::nullptr_t>::type =
+    typename std::enable_if<std::is_base_of<tensor_internal, R>::value, std::nullptr_t>::type =
         nullptr,
     typename std::enable_if<std::is_same<typename L::_internal_t, typename R::_internal_t>::value,
                             std::nullptr_t>::type = nullptr>
@@ -1343,7 +1346,7 @@ Expr<L, Div, R, typename L::value_type> operator/(const L& lhs, const R& rhs) {
 template <typename L,
           typename R,
           typename std::enable_if<std::is_arithmetic<L>::value, std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
+          typename std::enable_if<std::is_base_of<tensor_internal, R>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Div, R, typename R::value_type> operator/(const L& lhs, const R& rhs) {
   return Expr<L, Div, R, typename R::value_type, typename R::_internal_t>(lhs, rhs);
@@ -1352,7 +1355,7 @@ Expr<L, Div, R, typename R::value_type> operator/(const L& lhs, const R& rhs) {
 template <typename L,
           typename R,
           typename std::enable_if<std::is_arithmetic<R>::value, std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+          typename std::enable_if<std::is_base_of<tensor_internal, L>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Div, R, typename L::value_type> operator/(const L& lhs, const R& rhs) {
   return Expr<L, Div, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
@@ -1362,9 +1365,9 @@ Expr<L, Div, R, typename L::value_type> operator/(const L& lhs, const R& rhs) {
 template <
     typename L,
     typename R,
-    typename std::enable_if<std::is_convertible<L, tensor_internal>::value, std::nullptr_t>::type =
+    typename std::enable_if<std::is_base_of<tensor_internal, L>::value, std::nullptr_t>::type =
         nullptr,
-    typename std::enable_if<std::is_convertible<R, tensor_internal>::value, std::nullptr_t>::type =
+    typename std::enable_if<std::is_base_of<tensor_internal, R>::value, std::nullptr_t>::type =
         nullptr,
     typename std::enable_if<std::is_same<typename L::_internal_t, typename R::_internal_t>::value,
                             std::nullptr_t>::type = nullptr>
@@ -1375,7 +1378,7 @@ Expr<L, Mul, R, typename L::value_type> operator*(const L& lhs, const R& rhs) {
 template <typename L,
           typename R,
           typename std::enable_if<std::is_arithmetic<L>::value, std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
+          typename std::enable_if<std::is_base_of<tensor_internal, R>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Mul, R, typename R::value_type> operator*(const L& lhs, const R& rhs) {
   return Expr<L, Mul, R, typename R::value_type, typename R::_internal_t>(lhs, rhs);
@@ -1384,7 +1387,7 @@ Expr<L, Mul, R, typename R::value_type> operator*(const L& lhs, const R& rhs) {
 template <typename L,
           typename R,
           typename std::enable_if<std::is_arithmetic<R>::value, std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
+          typename std::enable_if<std::is_base_of<tensor_internal, L>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Mul, R, typename L::value_type> operator*(const L& lhs, const R& rhs) {
   return Expr<L, Mul, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
