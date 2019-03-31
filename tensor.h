@@ -46,6 +46,18 @@
 #define NDEBUG
 #endif
 
+/*--- if SIMD is enabled but the compiler does not support it ---*/
+#if defined(TENSOR_ENABLE_SIMD)
+#if not defined(__SSE__) || not defined(__AVX__)
+#error The compiler does not support SIMD extensions (add options like '-mavx' or '-march=native').
+#endif
+#endif
+
+/*--- if AVX or SSE macro is defined ---*/
+#if (defined(__SSE__) || defined(__AVX__)) && not defined(TENSOR_ENABLE_SIMD)
+#define TENSOR_ENABLE_SIMD
+#endif
+
 /*--- define likely and unlikely macros ---*/
 
 // if the compiler is GCC, Clang or ICC,
@@ -71,6 +83,10 @@
 #include <numeric>
 #include <type_traits>
 #include <vector>
+
+#ifdef TENSOR_ENABLE_SIMD
+#include <immintrin.h>
+#endif
 
 namespace rnz {
 
@@ -138,6 +154,17 @@ tensor<T, D1, INTERNAL_TYPE> tensor_cast(const tensor<T, D2, INTERNAL_TYPE>& src
   std::copy(std::begin(src), std::end(src), std::begin(retval));
   return retval;
 }
+
+static inline constexpr bool is_simd_enabled() {
+#ifdef TENSOR_ENABLE_SIMD
+  return true;
+#else
+  return false;
+#endif
+}
+
+template <typename T, std::size_t Align>
+T* aligned_alloc(T* p) {}
 
 /*--- functions ---*/
 
