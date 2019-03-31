@@ -1253,6 +1253,15 @@ struct Mul {
   }
 };
 
+/*--- Operators for Expression templates ---*/
+
+/*
+  3パターンで場合分け
+  1. 両辺がtensor_internalを継承している場合
+  2. 左辺がtensor_internalを継承している場合
+  3. 右辺がtensor_internalを継承している場合
+*/
+
 /* Plus */
 template <
     typename L,
