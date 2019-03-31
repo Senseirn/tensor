@@ -225,6 +225,20 @@ class tensor_view : public tensor_internal {
     return *this;
   }
 
+  template <typename L, typename Op, typename R, typename ITYPE>
+  tensor_view& operator=(const Expr<L, Op, R, value_type, ITYPE>& rhs) {
+    static_assert(std::is_same<_internal_t, ITYPE>::value,
+                  "tensor assignment error: different internal type");
+    if (rhs.num_elements() != num_elements()) {
+      std::cerr << "tensor assignment error: different num of elements" << std::endl;
+    }
+    for (auto i = to_index(0); i < num_elements(); i++) {
+      _data[i] = rhs.eval(i);
+    }
+
+    return *this;
+  }
+
   tensor_extent<T, D - 1, _internal_t>& operator[](const _internal_t i) {
     check_range(i, _dims[D - 1], D);
     return _extents.calc_index(i * _strides[D - 1]);
@@ -397,6 +411,20 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
     _num_elements = src.num_elements();
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
+    return *this;
+  }
+
+  template <typename L, typename Op, typename R, typename ITYPE>
+  tensor_view& operator=(const Expr<L, Op, R, value_type, ITYPE>& rhs) {
+    static_assert(std::is_same<_internal_t, ITYPE>::value,
+                  "tensor assignment error: different internal type");
+    if (rhs.num_elements() != num_elements()) {
+      std::cerr << "tensor assignment error: different num of elements" << std::endl;
+    }
+    for (auto i = to_index(0); i < num_elements(); i++) {
+      _data[i] = rhs.eval(i);
+    }
+
     return *this;
   }
 
@@ -705,8 +733,10 @@ class tensor<
   }
 
   /*! EXPERIMNET */
-  template <typename L, typename Op, typename R>
-  tensor& operator=(const Expr<L, Op, R, value_type, _internal_t>& rhs) {
+  template <typename L, typename Op, typename R, typename ITYPE>
+  tensor& operator=(const Expr<L, Op, R, value_type, ITYPE>& rhs) {
+    static_assert(std::is_same<_internal_t, ITYPE>::value,
+                  "tensor assignment error: different internal type");
     if (rhs.num_elements() != num_elements()) {
       std::cerr << "tensor assignment error: num of elements miss-matched!" << std::endl;
       std::exit(1);
@@ -902,6 +932,7 @@ class tensor<
 : public tensor_internal {
  public:
   typedef INTERNAL_TYPE _internal_t;
+  typedef T value_type;
 
  private:
   T* _data;                          // a pointer to the data
@@ -969,6 +1000,22 @@ class tensor<
     _strides = std::move(src.strides());
   }
 
+  template <typename L, typename Op, typename R, typename ITYPE>
+  tensor(const Expr<L, Op, R, value_type, ITYPE>& rhs)
+  : _data(nullptr)
+  , _dims(1)
+  , _strides(1) {
+    static_assert(std::is_same<_internal_t, ITYPE>::value,
+                  "tensor assignment error: different internal type");
+    _num_elements = rhs.num_elements();
+    _data = new T[_num_elements];
+    _dims = rhs.dims();
+    _strides[0] = 1;
+
+    for (int i = 0; i < (int)_num_elements; i++)
+      _data[i] = rhs.eval(i);
+  }
+
   tensor& operator=(const tensor& src) {
     delete[] _data;
     _num_elements = src.num_elements();
@@ -987,6 +1034,19 @@ class tensor<
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
 
+    return *this;
+  }
+
+  template <typename L, typename Op, typename R, typename ITYPE>
+  tensor& operator=(const Expr<L, Op, R, value_type, ITYPE>& rhs) {
+    static_assert(std::is_same<_internal_t, ITYPE>::value,
+                  "tensor assignment error: different internal type");
+    if (rhs.num_elements() != num_elements()) {
+      std::cerr << "tensor assignment error: num of elements miss-matched!" << std::endl;
+      std::exit(1);
+    }
+    for (int i = 0; i < (int)_num_elements; i++)
+      _data[i] = rhs.eval(i);
     return *this;
   }
 

@@ -32,8 +32,8 @@ int main(int argc, char* argv[]) {
   std::iota(B.begin(), B.end(), 1);
   C.fill(0.f);
 
-  tensor<float, 2> K(2, 2);
-  tensor<float, 2> L(2, 2);
+  tensor<float, 1> K(2);
+  tensor<float, 1> L(2);
 
   std::iota(K.begin(), K.end(), 1);
   std::iota(L.begin(), L.end(), 1);
@@ -60,9 +60,11 @@ int main(int argc, char* argv[]) {
   B.reshape(3, 2, 2);
   std::iota(A.begin(), A.end(), 1);
   std::iota(B.begin(), B.end(), 1);
-  tensor<float, 2> tar(A.make_view<2>(0) + K + L);
   // tensor<float, 3> tar = A + B * 2;
-  std::cout << tar[0][1] << std::endl;
+
+  tensor<float, 1> bb = K + L;
+  std::cout << bb[0] << std::endl;
+
   auto end = system_clock::now();
 
   auto sum = std::accumulate(C.begin(), C.end(), 0.0);
