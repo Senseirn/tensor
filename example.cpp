@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
   using namespace rnz;
   using namespace std::chrono;
 
-  const int N = 2;
+  const int N = 1024 * 8;
 
   // float型の２次元テンソルを宣言
   // 各次元の要素数はN
@@ -32,14 +32,16 @@ int main(int argc, char* argv[]) {
   B.reshape(N, N);
   C.reshape(N, N);
 
-  tensor<float, 1> D(N);
-  std::iota(std::begin(D), std::end(D), 1);
+  std::iota(std::begin(B), std::end(B), 1);
   std::iota(std::begin(A), std::end(A), 1);
-  C.fill(0);
 
-  auto AA = (A.make_view<1>(0) = A.make_view<1>(1) * D * D).to_tensor();
+  auto st = system_clock::now();
+  C = A * B;
+  auto end = system_clock::now();
 
-  for (auto e : AA) {
-    std::cout << e << std::endl;
-  }
+  std::cout << duration_cast<milliseconds>(end - st).count() / 1000.f << std::endl;
+
+  std::cout << rnz::is_simd_enabled() << std::endl;
+
+  //  auto AA = (A.make_view<1>(0) = A.make_view<1>(1) * D * D).to_tensor();
 }

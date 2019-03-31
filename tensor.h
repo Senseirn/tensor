@@ -48,13 +48,13 @@
 
 /*--- if SIMD is enabled but the compiler does not support it ---*/
 #if defined(TENSOR_ENABLE_SIMD)
-#if not defined(__SSE__) || not defined(__AVX__)
+#if not defined(__AVX__)
 #error The compiler does not support SIMD extensions (add options like '-mavx' or '-march=native').
 #endif
 #endif
 
-/*--- if AVX or SSE macro is defined ---*/
-#if (defined(__SSE__) || defined(__AVX__)) && not defined(TENSOR_ENABLE_SIMD)
+/*--- if AVX macro is defined ---*/
+#if defined(__AVX__) && not defined(TENSOR_ENABLE_SIMD)
 #define TENSOR_ENABLE_SIMD
 #endif
 
@@ -163,8 +163,23 @@ static inline constexpr bool is_simd_enabled() {
 #endif
 }
 
-template <typename T, std::size_t Align>
-T* aligned_alloc(T* p) {}
+template <typename T, std::size_t Align = 32>
+T* aligned_alloc(std::size_t n) {
+#ifdef TENSOR_ENABLE_SIMD
+  return static_cast<T*>(_mm_malloc(sizeof(T) * n, 32));
+#else
+  return new T[n];
+#endif
+}
+
+template <typename T>
+void aligned_deleter(T* p) {
+#ifdef TENSOR_ENABLE_SIMD
+  _mm_free(p);
+#else
+  delete[] p;
+#endif
+}
 
 /*--- functions ---*/
 
@@ -678,7 +693,8 @@ class tensor<
     }
     std::reverse(_dims.begin(), _dims.end());
     _num_elements = std::accumulate(_dims.begin(), _dims.end(), 1, std::multiplies<int>());
-    _data = new T[_num_elements];
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     _strides[D - 1] = _num_elements / _dims[D - 1];
     for (int i = D - 2; i >= 0; i--) {
       _strides[i] = _strides[i + 1] / _dims[i];
@@ -697,14 +713,16 @@ class tensor<
     _num_elements = view.num_elements();
     _dims = view.dims();
     _strides = view.strides();
-    _data = new T[_num_elements];
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     std::copy(view.begin(), view.end(), _data);
     _extents.init(_data, _dims, _strides);
   }
 
   tensor(const tensor& src) {
     _num_elements = src.num_elements();
-    _data = new T[_num_elements];
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     std::copy(src.begin(), src.end(), _data);
     _dims = src.dims();
     _strides = src.strides();
@@ -728,7 +746,8 @@ class tensor<
     static_assert(std::is_same<_internal_t, ITYPE>::value,
                   "tensor assignment error: different internal type");
     _num_elements = rhs.num_elements();
-    _data = new T[_num_elements];
+    // _data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     _dims = rhs.dims();
     _strides[D - 1] = _num_elements / _dims[D - 1];
     for (int i = D - 2; i >= 0; i--) {
@@ -742,9 +761,11 @@ class tensor<
 
   /*--- operators ---*/
   tensor& operator=(const tensor& src) {
-    delete[] _data;
+    // delete[] _data;
+    aligned_deleter(_data);
     _num_elements = src.num_elements();
-    _data = new T[_num_elements];
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     std::copy(src.begin(), src.end(), _data);
     _dims = src.dims();
     _strides = src.strides();
@@ -753,7 +774,8 @@ class tensor<
   }
 
   tensor& operator=(tensor&& src) {
-    delete[] _data;
+    // delete[] _data;
+    aligned_deleter(_data);
     _num_elements = src.num_elements();
     _data = src.data();
     _dims = std::move(src.dims());
@@ -816,8 +838,10 @@ class tensor<
     for (int i = D - 2; i >= 0; i--) {
       _strides[i] = _strides[i + 1] / _dims[i];
     }
-    delete[] _data;
-    _data = new T[_num_elements];
+    // delete[] _data;
+    aligned_deleter(_data);
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     _extents.init(_data, _dims, _strides);
   }
 
@@ -950,7 +974,10 @@ class tensor<
     return static_cast<_internal_t>(i);
   }
 
-  ~tensor() { delete[] _data; }
+  ~tensor() {
+    aligned_deleter(_data);
+    // delete[] _data;
+  }
 };
 
 template <typename T, typename INTERNAL_TYPE>
@@ -998,14 +1025,16 @@ class tensor<
       std::exit(1);
     }
     _num_elements = d;
-    _data = new T[_num_elements];
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     _dims[0] = _num_elements;
     _strides[0] = 1;
   }
 
   tensor(const tensor& src) {
     _num_elements = src.num_elements();
-    _data = new T[_num_elements];
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     std::copy(src.begin(), src.end(), _data);
     _dims = src.dims();
     _strides = src.strides();
@@ -1018,7 +1047,8 @@ class tensor<
     _num_elements = view.num_elements();
     _dims = view.dims();
     _strides = view.strides();
-    _data = new T[_num_elements];
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     std::copy(std::begin(view), std::end(view), _data);
   }
 
@@ -1038,7 +1068,8 @@ class tensor<
     static_assert(std::is_same<_internal_t, ITYPE>::value,
                   "tensor assignment error: different internal type");
     _num_elements = rhs.num_elements();
-    _data = new T[_num_elements];
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     _dims = rhs.dims();
     _strides[0] = 1;
 
@@ -1047,9 +1078,11 @@ class tensor<
   }
 
   tensor& operator=(const tensor& src) {
-    delete[] _data;
+    // delete[] _data;
+    aligned_deleter(_data);
     _num_elements = src.num_elements();
-    _data = new T[_num_elements];
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
     std::copy(src.begin(), src.end(), _data);
     _dims = src.dims();
     _strides = src.strides();
@@ -1057,7 +1090,8 @@ class tensor<
   }
 
   tensor& operator=(tensor&& src) {
-    delete[] _data;
+    // delete[] _data;
+    aligned_deleter(_data);
     _num_elements = src.num_elements();
     _data = src.data();
     src.data() = nullptr;
@@ -1143,7 +1177,9 @@ class tensor<
     return static_cast<_internal_t>(i);
   }
 
-  ~tensor() { delete[] _data; }
+  ~tensor() { // delete[] _data;
+    aligned_deleter(_data);
+  }
 };
 
 /*--- typedefs ---*/
