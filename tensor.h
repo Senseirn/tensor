@@ -85,7 +85,11 @@ class tensor;
 template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
 class tensor_view;
 
-template <typename L, typename Op, typename R, typename T>
+template <typename L,
+          typename Op,
+          typename R,
+          typename T,
+          typename ITYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
 class Expr;
 
 /*--- range check functions ---*/
@@ -143,8 +147,10 @@ tensor<T, D, INTERNAL_TYPE> make_tensor(const std::initializer_list<INTERNAL_TYP
 /*--- class and struct ---*/
 template <typename T, std::size_t D, typename INTERNAL_TYPE>
 class tensor_view : public tensor_internal {
- private:
+ public:
   typedef INTERNAL_TYPE _internal_t;
+
+ private:
   T* _data; // a pointer to the first data of dimension D
   _internal_t _num_elements;
   std::vector<_internal_t> _dims;    // the num of elements in each dimension
@@ -165,7 +171,7 @@ class tensor_view : public tensor_internal {
   template <std::size_t _D>
   using fixed_indices = std::array<int, _D>;
 
-  template <typename L, typename Op, typename R, typename TT>
+  template <typename L, typename Op, typename R, typename TT, typename ITYPE>
   friend class Expr;
 
   /*--- constructors ---*/
@@ -326,8 +332,10 @@ class tensor_view : public tensor_internal {
 
 template <typename T, typename INTERNAL_TYPE>
 class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
- private:
+ public:
   typedef INTERNAL_TYPE _internal_t;
+
+ private:
   T* _data;                          // a pointer to the data
   _internal_t _num_elements;         // total elements of tensor
   std::vector<_internal_t> _dims;    // the num of elements in each dimension
@@ -341,7 +349,7 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
   typedef _internal_t multi_index;
   typedef _internal_t index_t;
 
-  template <typename L, typename Op, typename R, typename TT>
+  template <typename L, typename Op, typename R, typename TT, typename ITYPE>
   friend class Expr;
   /*--- constructors ---*/
   tensor_view()
@@ -470,7 +478,7 @@ struct tensor_extent : public tensor_internal {
 
   //  T eval(const int i) const { return _data[i]; }
 
-  template <typename L, typename Op, typename R, typename TT>
+  template <typename L, typename Op, typename R, typename TT, typename ITYPE>
   friend class Expr;
   /*--- functions ---*/
   inline tensor_extent<T, D, _internal_t>& calc_index(const _internal_t accum) {
@@ -560,8 +568,10 @@ class tensor<
     INTERNAL_TYPE,
     typename std::enable_if<std::is_arithmetic<T>::value || std::is_pointer<T>::value, void>::type>
 : public tensor_internal {
- private:
+ public:
   typedef INTERNAL_TYPE _internal_t;
+
+ private:
   T* _data;                                      // a pointer to the data
   _internal_t _num_elements;                     // total elements of tensor
   std::vector<_internal_t> _dims;                // the num of elements in each dimension
@@ -582,7 +592,7 @@ class tensor<
 
   typedef _internal_t index_t;
 
-  template <typename L, typename Op, typename R, typename TT>
+  template <typename L, typename Op, typename R, typename TT, typename ITYPE>
   friend class Expr;
 
   /*--- constructors ---*/
@@ -652,11 +662,13 @@ class tensor<
     _extents.init(_data, _dims, _strides);
   }
 
-  template <typename L, typename Op, typename R>
-  tensor(const Expr<L, Op, R, value_type>& rhs)
+  template <typename L, typename Op, typename R, typename ITYPE>
+  tensor(const Expr<L, Op, R, value_type, ITYPE>& rhs)
   : _data(nullptr)
   , _dims(D)
   , _strides(D) {
+    static_assert(std::is_same<_internal_t, ITYPE>::value,
+                  "tensor assignment error: different internal type");
     _num_elements = rhs.num_elements();
     _data = new T[_num_elements];
     _dims = rhs.dims();
@@ -694,7 +706,7 @@ class tensor<
 
   /*! EXPERIMNET */
   template <typename L, typename Op, typename R>
-  tensor& operator=(const Expr<L, Op, R, value_type>& rhs) {
+  tensor& operator=(const Expr<L, Op, R, value_type, _internal_t>& rhs) {
     if (rhs.num_elements() != num_elements()) {
       std::cerr << "tensor assignment error: num of elements miss-matched!" << std::endl;
       std::exit(1);
@@ -888,8 +900,10 @@ class tensor<
     INTERNAL_TYPE,
     typename std::enable_if<std::is_arithmetic<T>::value || std::is_pointer<T>::value, void>::type>
 : public tensor_internal {
- private:
+ public:
   typedef INTERNAL_TYPE _internal_t;
+
+ private:
   T* _data;                          // a pointer to the data
   _internal_t _num_elements;         // total elements of tensor
   std::vector<_internal_t> _dims;    // the num of elements in each dimension
@@ -903,7 +917,7 @@ class tensor<
   typedef _internal_t multi_index;
   typedef _internal_t index_t;
 
-  template <typename L, typename Op, typename R, typename TT>
+  template <typename L, typename Op, typename R, typename TT, typename ITYPE>
   friend class Expr;
   // default constructor
   tensor()
@@ -1050,14 +1064,18 @@ using vector = tensor<T, 1, INTERNAL_TYPE>;
 
 /*--- Expression Templates ---*/
 namespace rnz {
-template <typename L, typename Op, typename R, typename T>
+template <typename L, typename Op, typename R, typename T, typename ITYPE>
 class Expr : public tensor_internal {
+ public:
+  typedef ITYPE _internal_t;
+
+ private:
   const L& _lhs;
   const R& _rhs;
 
-  std::size_t _num_elements;
-  const std::vector<std::size_t> _dims;
-  std::size_t _dimension;
+  _internal_t _num_elements;
+  const std::vector<_internal_t> _dims;
+  _internal_t _dimension;
 
  public:
   typedef T value_type;
@@ -1110,8 +1128,8 @@ class Expr : public tensor_internal {
     _num_elements = _lhs.num_elements();
   }
 
-  const L& lhs() { return _lhs; }
-  const R& rhs() { return _rhs; }
+  const L& lhs() const { return _lhs; }
+  const R& rhs() const { return _rhs; }
 
   template <typename LL = L,
             typename RR = R,
@@ -1140,11 +1158,11 @@ class Expr : public tensor_internal {
   T eval(const int i) const {
     return Op::apply(_lhs.eval(i), (T)_rhs);
   }
-  //  T data(const int i) const { return _lhs.data()[i] + _rhs.data()[i]; }
 
-  std::size_t num_elements() const { return _num_elements; }
-  const std::vector<std::size_t>& dims() const { return _dims; }
-  std::size_t dimension() const { return _dimension; }
+  /*--- functions ---*/
+  _internal_t num_elements() const { return _num_elements; }
+  const std::vector<_internal_t>& dims() const { return _dims; }
+  _internal_t dimension() const { return _dimension; }
 };
 
 struct Plus {
@@ -1176,14 +1194,17 @@ struct Mul {
 };
 
 /* Plus */
-template <typename L,
-          typename R,
-          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
-                                  std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
-                                  std::nullptr_t>::type = nullptr>
+template <
+    typename L,
+    typename R,
+    typename std::enable_if<std::is_convertible<L, tensor_internal>::value, std::nullptr_t>::type =
+        nullptr,
+    typename std::enable_if<std::is_convertible<R, tensor_internal>::value, std::nullptr_t>::type =
+        nullptr,
+    typename std::enable_if<std::is_same<typename L::_internal_t, typename R::_internal_t>::value,
+                            std::nullptr_t>::type = nullptr>
 Expr<L, Plus, R, typename L::value_type> operator+(const L& lhs, const R& rhs) {
-  return Expr<L, Plus, R, typename L::value_type>(lhs, rhs);
+  return Expr<L, Plus, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
 }
 
 template <typename L,
@@ -1192,7 +1213,7 @@ template <typename L,
           typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Plus, R, typename R::value_type> operator+(const L& lhs, const R& rhs) {
-  return Expr<L, Plus, R, typename R::value_type>(lhs, rhs);
+  return Expr<L, Plus, R, typename R::value_type, typename R::_internal_t>(lhs, rhs);
 }
 
 template <typename L,
@@ -1201,18 +1222,21 @@ template <typename L,
           typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Plus, R, typename L::value_type> operator+(const L& lhs, const R& rhs) {
-  return Expr<L, Plus, R, typename L::value_type>(lhs, rhs);
+  return Expr<L, Plus, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
 }
 
 /* Minus */
-template <typename L,
-          typename R,
-          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
-                                  std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
-                                  std::nullptr_t>::type = nullptr>
+template <
+    typename L,
+    typename R,
+    typename std::enable_if<std::is_convertible<L, tensor_internal>::value, std::nullptr_t>::type =
+        nullptr,
+    typename std::enable_if<std::is_convertible<R, tensor_internal>::value, std::nullptr_t>::type =
+        nullptr,
+    typename std::enable_if<std::is_same<typename L::_internal_t, typename R::_internal_t>::value,
+                            std::nullptr_t>::type = nullptr>
 Expr<L, Minus, R, typename L::value_type> operator-(const L& lhs, const R& rhs) {
-  return Expr<L, Minus, R, typename L::value_type>(lhs, rhs);
+  return Expr<L, Minus, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
 }
 
 template <typename L,
@@ -1221,7 +1245,7 @@ template <typename L,
           typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Minus, R, typename R::value_type> operator-(const L& lhs, const R& rhs) {
-  return Expr<L, Minus, R, typename R::value_type>(lhs, rhs);
+  return Expr<L, Minus, R, typename R::value_type, typename R::_internal_t>(lhs, rhs);
 }
 
 template <typename L,
@@ -1230,18 +1254,21 @@ template <typename L,
           typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Minus, R, typename L::value_type> operator-(const L& lhs, const R& rhs) {
-  return Expr<L, Minus, R, typename L::value_type>(lhs, rhs);
+  return Expr<L, Minus, R, typename L::value_type, typename L::internal_t>(lhs, rhs);
 }
 
 /* Div*/
-template <typename L,
-          typename R,
-          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
-                                  std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
-                                  std::nullptr_t>::type = nullptr>
+template <
+    typename L,
+    typename R,
+    typename std::enable_if<std::is_convertible<L, tensor_internal>::value, std::nullptr_t>::type =
+        nullptr,
+    typename std::enable_if<std::is_convertible<R, tensor_internal>::value, std::nullptr_t>::type =
+        nullptr,
+    typename std::enable_if<std::is_same<typename L::_internal_t, typename R::_internal_t>::value,
+                            std::nullptr_t>::type = nullptr>
 Expr<L, Div, R, typename L::value_type> operator/(const L& lhs, const R& rhs) {
-  return Expr<L, Div, R, typename L::value_type>(lhs, rhs);
+  return Expr<L, Div, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
 }
 
 template <typename L,
@@ -1250,7 +1277,7 @@ template <typename L,
           typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Div, R, typename R::value_type> operator/(const L& lhs, const R& rhs) {
-  return Expr<L, Div, R, typename R::value_type>(lhs, rhs);
+  return Expr<L, Div, R, typename R::value_type, typename R::_internal_t>(lhs, rhs);
 }
 
 template <typename L,
@@ -1259,18 +1286,21 @@ template <typename L,
           typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Div, R, typename L::value_type> operator/(const L& lhs, const R& rhs) {
-  return Expr<L, Div, R, typename L::value_type>(lhs, rhs);
+  return Expr<L, Div, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
 }
 
 /* Mul */
-template <typename L,
-          typename R,
-          typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
-                                  std::nullptr_t>::type = nullptr,
-          typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
-                                  std::nullptr_t>::type = nullptr>
+template <
+    typename L,
+    typename R,
+    typename std::enable_if<std::is_convertible<L, tensor_internal>::value, std::nullptr_t>::type =
+        nullptr,
+    typename std::enable_if<std::is_convertible<R, tensor_internal>::value, std::nullptr_t>::type =
+        nullptr,
+    typename std::enable_if<std::is_same<typename L::_internal_t, typename R::_internal_t>::value,
+                            std::nullptr_t>::type = nullptr>
 Expr<L, Mul, R, typename L::value_type> operator*(const L& lhs, const R& rhs) {
-  return Expr<L, Mul, R, typename L::value_type>(lhs, rhs);
+  return Expr<L, Mul, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
 }
 
 template <typename L,
@@ -1279,7 +1309,7 @@ template <typename L,
           typename std::enable_if<std::is_convertible<R, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Mul, R, typename R::value_type> operator*(const L& lhs, const R& rhs) {
-  return Expr<L, Mul, R, typename R::value_type>(lhs, rhs);
+  return Expr<L, Mul, R, typename R::value_type, typename R::_internal_t>(lhs, rhs);
 }
 
 template <typename L,
@@ -1288,7 +1318,7 @@ template <typename L,
           typename std::enable_if<std::is_convertible<L, tensor_internal>::value,
                                   std::nullptr_t>::type = nullptr>
 Expr<L, Mul, R, typename L::value_type> operator*(const L& lhs, const R& rhs) {
-  return Expr<L, Mul, R, typename L::value_type>(lhs, rhs);
+  return Expr<L, Mul, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
 }
 
 } // namespace rnz
