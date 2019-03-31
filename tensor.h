@@ -1025,12 +1025,51 @@ class Expr : public tensor_internal {
   const L& _lhs;
   const R& _rhs;
 
+  std::size_t _num_elements;
+
  public:
   typedef T value_type;
 
+  /*
+    expr(const l& lhs, const r& rhs)
+    : _lhs(lhs)
+    , _rhs(rhs) {}
+    */
+
+  template <typename LL = L,
+            typename RR = R,
+            typename std::enable_if<(std::is_convertible<LL, tensor_internal>::value &&
+                                     std::is_arithmetic<RR>::value),
+                                    std::nullptr_t>::type = nullptr>
   Expr(const L& lhs, const R& rhs)
   : _lhs(lhs)
-  , _rhs(rhs) {}
+  , _rhs(rhs)
+  , _num_elements(lhs.num_elements()) {}
+
+  template <typename LL = L,
+            typename RR = R,
+            typename std::enable_if<(std::is_convertible<RR, tensor_internal>::value &&
+                                     std::is_arithmetic<LL>::value),
+                                    std::nullptr_t>::type = nullptr>
+  Expr(const L& lhs, const R& rhs)
+  : _lhs(lhs)
+  , _rhs(rhs)
+  , _num_elements(rhs.num_elements()) {}
+
+  template <typename LL = L,
+            typename RR = R,
+            typename std::enable_if<(std::is_convertible<LL, tensor_internal>::value &&
+                                     std::is_convertible<RR, tensor_internal>::value),
+                                    std::nullptr_t>::type = nullptr>
+  Expr(const L& lhs, const R& rhs)
+  : _lhs(lhs)
+  , _rhs(rhs) {
+    if (_lhs.num_elements() != _rhs.num_elements()) {
+      std::cerr << "tensor error: num of elements miss-matched! " << std::endl;
+      std::exit(1);
+    }
+    _num_elements = _lhs.num_elements();
+  }
 
   const L& lhs() { return _lhs; }
   const R& rhs() { return _rhs; }
@@ -1063,6 +1102,8 @@ class Expr : public tensor_internal {
     return Op::apply(_lhs.eval(i), (T)_rhs);
   }
   //  T data(const int i) const { return _lhs.data()[i] + _rhs.data()[i]; }
+
+  std::size_t num_elements() const { return _num_elements; }
 };
 
 struct Plus {

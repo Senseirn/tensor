@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
   using namespace rnz;
   using namespace std::chrono;
 
-  const int N = 1024 * 3;
+  const int N = 1024 / 2;
   const int NN = 2;
   tensor<float, 3, unsigned int> A, B, C, J;
   A.reshape(NN, N, N);
@@ -58,7 +58,10 @@ int main(int argc, char* argv[]) {
               */
         }
       }
-  auto ttttt = A + B + J;
+  J.reshape(3, 2, 2);
+  A.reshape(3, 2, 2);
+  B.reshape(3, 2, 2);
+  auto ttttt = 2 * A + B + J * 3;
   auto end = system_clock::now();
 
   auto sum = std::accumulate(C.begin(), C.end(), 0.0);
