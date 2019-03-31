@@ -254,6 +254,8 @@ class tensor_view : public tensor_internal {
 
   const std::vector<_internal_t>& strides() const { return _strides; }
 
+  _internal_t dimension() const { return (_internal_t)D; }
+
   T& with_indices(const multi_index& indices) {
     for (int i = D - 1; i >= 0; --i) {
       check_range(indices[D - 1 - i], _dims[i], i + 1);
@@ -426,6 +428,8 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
   _internal_t strides(const _internal_t d) const { return _strides[d]; }
 
   const std::vector<_internal_t>& strides() const { return _strides; }
+
+  _internal_t dimension() const { return (_internal_t)1; }
 
   T& with_indices(const _internal_t indices) {
     check_range(indices, _dims[0], 1);
@@ -648,6 +652,24 @@ class tensor<
     _extents.init(_data, _dims, _strides);
   }
 
+  template <typename L, typename Op, typename R>
+  tensor(const Expr<L, Op, R, value_type>& rhs)
+  : _data(nullptr)
+  , _dims(D)
+  , _strides(D) {
+    _num_elements = rhs.num_elements();
+    _data = new T[_num_elements];
+    _dims = rhs.dims();
+    _strides[D - 1] = _num_elements / _dims[D - 1];
+    for (int i = D - 2; i >= 0; i--) {
+      _strides[i] = _strides[i + 1] / _dims[i];
+    }
+    _extents.init(_data, _dims, _strides);
+
+    for (int i = 0; i < (int)_num_elements; i++)
+      _data[i] = rhs.eval(i);
+  }
+
   /*--- operators ---*/
   tensor& operator=(const tensor& src) {
     delete[] _data;
@@ -673,6 +695,10 @@ class tensor<
   /*! EXPERIMNET */
   template <typename L, typename Op, typename R>
   tensor& operator=(const Expr<L, Op, R, value_type>& rhs) {
+    if (rhs.num_elements() != num_elements()) {
+      std::cerr << "tensor assignment error: num of elements miss-matched!" << std::endl;
+      std::exit(1);
+    }
     for (int i = 0; i < (int)_num_elements; i++)
       _data[i] = rhs.eval(i);
     return *this;
@@ -784,6 +810,8 @@ class tensor<
   }
 
   const std::vector<_internal_t>& strides() const { return _strides; }
+
+  _internal_t dimension() const { return (_internal_t)D; }
 
   T& with_indices(const multi_index& indices) {
     for (int i = D - 1; i >= 0; --i)
@@ -984,6 +1012,8 @@ class tensor<
 
   const std::vector<_internal_t>& strides() const { return _strides; }
 
+  _internal_t dimension() const { return (_internal_t)1; }
+
   T& with_indices(const _internal_t indices) {
     check_range(indices, _dims[0], 1);
     return _data[indices];
@@ -1026,6 +1056,8 @@ class Expr : public tensor_internal {
   const R& _rhs;
 
   std::size_t _num_elements;
+  const std::vector<std::size_t> _dims;
+  std::size_t _dimension;
 
  public:
   typedef T value_type;
@@ -1044,7 +1076,9 @@ class Expr : public tensor_internal {
   Expr(const L& lhs, const R& rhs)
   : _lhs(lhs)
   , _rhs(rhs)
-  , _num_elements(lhs.num_elements()) {}
+  , _num_elements(lhs.num_elements())
+  , _dims(lhs.dims())
+  , _dimension(lhs.dimension()) {}
 
   template <typename LL = L,
             typename RR = R,
@@ -1054,7 +1088,9 @@ class Expr : public tensor_internal {
   Expr(const L& lhs, const R& rhs)
   : _lhs(lhs)
   , _rhs(rhs)
-  , _num_elements(rhs.num_elements()) {}
+  , _num_elements(rhs.num_elements())
+  , _dims(rhs.dims())
+  , _dimension(rhs.dimension()) {}
 
   template <typename LL = L,
             typename RR = R,
@@ -1063,7 +1099,10 @@ class Expr : public tensor_internal {
                                     std::nullptr_t>::type = nullptr>
   Expr(const L& lhs, const R& rhs)
   : _lhs(lhs)
-  , _rhs(rhs) {
+  , _rhs(rhs)
+  , _num_elements(lhs.num_elements())
+  , _dims(lhs.dimension() > rhs.dimension() ? lhs.dims() : rhs.dims())
+  , _dimension(lhs.dimension() > rhs.dimension() ? lhs.dimension() : rhs.dimension()) {
     if (_lhs.num_elements() != _rhs.num_elements()) {
       std::cerr << "tensor error: num of elements miss-matched! " << std::endl;
       std::exit(1);
@@ -1104,6 +1143,8 @@ class Expr : public tensor_internal {
   //  T data(const int i) const { return _lhs.data()[i] + _rhs.data()[i]; }
 
   std::size_t num_elements() const { return _num_elements; }
+  const std::vector<std::size_t>& dims() const { return _dims; }
+  std::size_t dimension() const { return _dimension; }
 };
 
 struct Plus {

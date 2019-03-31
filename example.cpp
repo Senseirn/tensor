@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 
   const int N = 1024 / 2;
   const int NN = 2;
-  tensor<float, 3, unsigned int> A, B, C, J;
+  tensor<float, 3> A, B, C, J;
   A.reshape(NN, N, N);
   B.reshape({NN, N, N});
   C.reshape({NN, N, N});
@@ -61,7 +61,11 @@ int main(int argc, char* argv[]) {
   J.reshape(3, 2, 2);
   A.reshape(3, 2, 2);
   B.reshape(3, 2, 2);
-  auto ttttt = 2 * A + B + J * 3;
+  std::iota(A.begin(), A.end(), 1);
+  std::iota(B.begin(), B.end(), 1);
+  std::cout << (2 * A + B + J * 3).dims()[0] << std::endl;
+  tensor<float, 3> tar = A + B * 2;
+  std::cout << tar[0][0][1] << std::endl;
   auto end = system_clock::now();
 
   auto sum = std::accumulate(C.begin(), C.end(), 0.0);
