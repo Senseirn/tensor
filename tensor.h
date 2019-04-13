@@ -112,7 +112,7 @@ template <typename L,
 class Expr;
 
 /*--- range check functions ---*/
-static inline constexpr bool is_asserts_enabled() {
+static inline constexpr bool is_assert_enabled() {
 #ifdef TENSOR_ENABLE_ASSERTS
   return true;
 #else
@@ -125,7 +125,7 @@ template <typename T1,
           typename std::enable_if<std::is_integral<T1>::value && std::is_integral<T2>::value,
                                   std::nullptr_t>::type = nullptr>
 void check_range(const T1 i, const T2 dim) {
-  if (is_asserts_enabled())
+  if (is_assert_enabled())
     if (unlikely(i < 0 || i >= dim)) {
       std::cerr << "error: out of range access (idx=" << i << ", dim=" << dim << ")" << std::endl;
       std::exit(1);
@@ -139,7 +139,7 @@ template <typename T1,
                                       std::is_integral<T3>::value,
                                   std::nullptr_t>::type = nullptr>
 void check_range(const T1 i, const T2 dim, const T3 D) {
-  if (is_asserts_enabled())
+  if (is_assert_enabled())
     if (unlikely(i < 0 || i >= dim)) {
       std::cerr << "error: out of range access [trying to access " << i << "th element in " << D
                 << "th dimension(max range = " << dim - 1 << ")]" << std::endl;
