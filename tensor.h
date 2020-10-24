@@ -1016,9 +1016,9 @@ class tensor<
   _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
 
   template <std::size_t _D,
-            typename std::enable_if<(_D <= D && _D >= 1), std::nullptr_t>::type = nullptr>
+            typename std::enable_if<(_D <= D && _D >= 0), std::nullptr_t>::type = nullptr>
   _internal_t shape() {
-    return _dims[_D - 1];
+    return _dims[_D];
   }
 
   const std::vector<_internal_t>& dims() const { return _dims; }

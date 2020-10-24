@@ -9,9 +9,9 @@ int main(int argc, char* argv[]) {
   const int N = 4;
   const int NN = 2;
   tensor<float, 3> A, B, C, J;
-  A.reshape(NN, N, N);
-  B.reshape({NN, N, N});
-  C.reshape({NN, N, N});
+  A.reshape(NN, N, N - 1);
+  B.reshape({NN, N, N - 1});
+  C.reshape({NN, N, N - 1});
 
   std::iota(A.begin(), A.end(), 1);
   std::iota(B.begin(), B.end(), 1);
@@ -26,17 +26,18 @@ int main(int argc, char* argv[]) {
   auto st = system_clock::now();
   using itr_t = decltype(A)::index_t;
 
-  std::cout << "A shape 3: " << A.shape<3>() << std::endl;
   std::cout << "A shape 2: " << A.shape<2>() << std::endl;
   std::cout << "A shape 1: " << A.shape<1>() << std::endl;
+  std::cout << "A shape 0: " << A.shape<0>() << std::endl;
+  // std::cout << "A shape 1: " << A.shape<0>() << std::endl;
 
-  for (itr_t n = 0; n < A.shape<3>(); n++)
+  for (itr_t n = 0; n < A.shape<2>(); n++)
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-    for (itr_t i = 0; i < A.shape<2>(); i++)
-      for (itr_t k = 0; k < A.shape<1>(); k++) {
-        for (itr_t j = 0; j < A.shape<1>(); j++) {
+    for (itr_t i = 0; i < A.shape<1>(); i++)
+      for (itr_t k = 0; k < A.shape<0>(); k++) {
+        for (itr_t j = 0; j < A.shape<0>(); j++) {
           C(n, i, j) += A(n, i, k) * B(n, k, j);
           // C.with_indices({n, i, j}) += A.with_indices({n, i, k}) * B.with_indices({n, k, j});
           /*
