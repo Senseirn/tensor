@@ -1017,7 +1017,7 @@ class tensor<
 
   template <std::size_t _D,
             typename std::enable_if<(_D <= D && _D >= 0), std::nullptr_t>::type = nullptr>
-  _internal_t shape() {
+  _internal_t extent() {
     return _dims[_D];
   }
 
