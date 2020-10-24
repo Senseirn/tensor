@@ -443,6 +443,9 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
     _num_elements = dims[0];
     _dims[0] = _num_elements;
     _strides[0] = 1;
+
+    // FIXME: supress unused warning.
+    (void)strides;
   }
 
   tensor_view(const tensor_view& src)
@@ -663,6 +666,7 @@ struct tensor_extent<T, 1, INTERNAL_TYPE> : public tensor_internal {
   typedef INTERNAL_TYPE _internal_t;
   T* _p;
   _internal_t _dim;
+  _internal_t _stride;
   mutable _internal_t _accum;
   //  T eval(const int i) const { return _data[i]; }
 
@@ -670,7 +674,8 @@ struct tensor_extent<T, 1, INTERNAL_TYPE> : public tensor_internal {
   tensor_extent()
   : _p(nullptr) {}
   tensor_extent(T* p, _internal_t stride)
-  : _p(p) {}
+  : _p(p)
+  , _stride(stride) {}
 
   tensor_extent<T, 1, _internal_t>& calc_index(const _internal_t accum) {
     _accum = accum;
@@ -685,6 +690,9 @@ struct tensor_extent<T, 1, INTERNAL_TYPE> : public tensor_internal {
   void init(T* p, std::vector<_internal_t>& dims, std::vector<_internal_t>& strides) {
     _dim = dims[0];
     _p = p;
+
+    // FIXME: supress unused warning.
+    (void)strides;
   }
 
   inline T& operator[](const _internal_t i) {
