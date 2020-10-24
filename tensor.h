@@ -159,6 +159,14 @@ tensor<T, D, INTERNAL_TYPE> make_tensor(const std::initializer_list<INTERNAL_TYP
   return tensor<T, D, INTERNAL_TYPE>(initialzier);
 }
 
+template <typename T,
+          std::size_t D,
+          typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE,
+          class... Args>
+tensor<T, D, INTERNAL_TYPE> make_tensor(Args... args) {
+  return tensor<T, D, INTERNAL_TYPE>({static_cast<INTERNAL_TYPE>(args)...});
+}
+
 /*--- class and struct ---*/
 template <typename T, std::size_t D, typename INTERNAL_TYPE>
 class tensor_view : public tensor_internal {
@@ -330,10 +338,6 @@ class tensor_view : public tensor_internal {
 
   _internal_t num_elements() const { return _num_elements; }
 
-  _internal_t shape() const { return D; }
-
-  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
-
   const std::vector<_internal_t>& dims() const { return _dims; }
 
   _internal_t strides(const _internal_t d) const { return _strides[d]; }
@@ -447,6 +451,9 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
     _num_elements = dims[0];
     _dims[0] = _num_elements;
     _strides[0] = 1;
+
+    // FIXME: supress unused warning.
+    (void)strides;
   }
 
   tensor_view(const tensor_view& src)
@@ -572,10 +579,6 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
 
   _internal_t num_elements() const { return _num_elements; }
 
-  _internal_t shape() const { return 1; }
-
-  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
-
   const std::vector<_internal_t>& dims() const { return _dims; }
 
   _internal_t strides(const _internal_t d) const { return _strides[d]; }
@@ -671,6 +674,7 @@ struct tensor_extent<T, 1, INTERNAL_TYPE> : public tensor_internal {
   typedef INTERNAL_TYPE _internal_t;
   T* _p;
   _internal_t _dim;
+  _internal_t _stride;
   mutable _internal_t _accum;
   //  T eval(const int i) const { return _data[i]; }
 
@@ -678,7 +682,8 @@ struct tensor_extent<T, 1, INTERNAL_TYPE> : public tensor_internal {
   tensor_extent()
   : _p(nullptr) {}
   tensor_extent(T* p, _internal_t stride)
-  : _p(p) {}
+  : _p(p)
+  , _stride(stride) {}
 
   tensor_extent<T, 1, _internal_t>& calc_index(const _internal_t accum) {
     _accum = accum;
@@ -693,6 +698,9 @@ struct tensor_extent<T, 1, INTERNAL_TYPE> : public tensor_internal {
   void init(T* p, std::vector<_internal_t>& dims, std::vector<_internal_t>& strides) {
     _dim = dims[0];
     _p = p;
+
+    // FIXME: supress unused warning.
+    (void)strides;
   }
 
   inline T& operator[](const _internal_t i) {
@@ -1011,14 +1019,10 @@ class tensor<
     as_shape_of(tmp);
   }
 
-  _internal_t shape() const { return D; }
-
-  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
-
   template <std::size_t _D,
-            typename std::enable_if<(_D <= D && _D >= 1), std::nullptr_t>::type = nullptr>
-  _internal_t shape() {
-    return _dims[_D - 1];
+            typename std::enable_if<(_D <= D && _D >= 0), std::nullptr_t>::type = nullptr>
+  _internal_t extent() {
+    return _dims[_D];
   }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
@@ -1316,10 +1320,6 @@ class tensor<
   void fill(T x) { std::fill(_data, _data + _num_elements, x); }
 
   _internal_t num_elements() const { return _num_elements; }
-
-  _internal_t shape() const { return 1; }
-
-  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
 
