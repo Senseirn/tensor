@@ -330,10 +330,6 @@ class tensor_view : public tensor_internal {
 
   _internal_t num_elements() const { return _num_elements; }
 
-  _internal_t shape() const { return D; }
-
-  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
-
   const std::vector<_internal_t>& dims() const { return _dims; }
 
   _internal_t strides(const _internal_t d) const { return _strides[d]; }
@@ -571,10 +567,6 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
   void fill(T x) { std::fill(_data, _data + _num_elements, x); }
 
   _internal_t num_elements() const { return _num_elements; }
-
-  _internal_t shape() const { return 1; }
-
-  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
 
@@ -1011,10 +1003,6 @@ class tensor<
     as_shape_of(tmp);
   }
 
-  _internal_t shape() const { return D; }
-
-  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
-
   template <std::size_t _D,
             typename std::enable_if<(_D <= D && _D >= 0), std::nullptr_t>::type = nullptr>
   _internal_t extent() {
@@ -1316,10 +1304,6 @@ class tensor<
   void fill(T x) { std::fill(_data, _data + _num_elements, x); }
 
   _internal_t num_elements() const { return _num_elements; }
-
-  _internal_t shape() const { return 1; }
-
-  _internal_t shape(const _internal_t d) const { return _dims[d - 1]; }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
 
