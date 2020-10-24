@@ -159,6 +159,14 @@ tensor<T, D, INTERNAL_TYPE> make_tensor(const std::initializer_list<INTERNAL_TYP
   return tensor<T, D, INTERNAL_TYPE>(initialzier);
 }
 
+template <typename T,
+          std::size_t D,
+          typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE,
+          class... Args>
+tensor<T, D, INTERNAL_TYPE> make_tensor(Args... args) {
+  return tensor<T, D, INTERNAL_TYPE>({static_cast<INTERNAL_TYPE>(args)...});
+}
+
 /*--- class and struct ---*/
 template <typename T, std::size_t D, typename INTERNAL_TYPE>
 class tensor_view : public tensor_internal {

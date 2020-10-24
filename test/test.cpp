@@ -1,84 +1,89 @@
+// test program for tensor.h
+
 #include "tensor.h"
 #include <chrono>
 #include <cmath>
 
-int main(int argc, char* argv[]) {
+int main() {
   using namespace rnz;
   using namespace std::chrono;
+  using itr_t = tensor<float, 1>::index_t;
 
-  const int N = 4;
-  const int NN = 2;
-  tensor<float, 3> A, B, C, J;
-  A.reshape(NN, N, N - 1);
-  B.reshape({NN, N, N - 1});
-  C.reshape({NN, N, N - 1});
+  int ret_code = 0;
 
-  std::iota(A.begin(), A.end(), 1);
-  std::iota(B.begin(), B.end(), 1);
-  C.fill(0.f);
+  // 1. create tensor instance
+  tensor<float, 2> A(4, 3); // declare 2d tensor, where 1st dim is 4, zero dim is 3.
+  tensor<float, 2> B;       // declare 2d tensor, size is not defined here
+  B.reshape(3, 4);          // reshape to 3*4
 
-  tensor<float, 1> K(2);
-  tensor<float, 1> L(2);
+  if (A.num_elements() == B.num_elements()) {
+    std::cout << "A and B has same number of elements : " << A.num_elements() << std::endl;
+  } else {
+    std::cout << "A and B has different size of elements." << std::endl;
+    std::cout << "A has : " << A.num_elements() << std::endl;
+    std::cout << "B has : " << B.num_elements() << std::endl;
+    ret_code = 1;
+  }
 
-  std::iota(K.begin(), K.end(), 1);
-  std::iota(L.begin(), L.end(), 1);
+  // 2. calculate gemm
 
-  auto st = system_clock::now();
-  using itr_t = decltype(A)::index_t;
+  // init data
+  for (itr_t i = 0; i < A.num_elements(); i++) {
+    A.data()[i] = i;
+  }
 
-  std::cout << "A shape 2: " << A.extent<2>() << std::endl;
-  std::cout << "A shape 1: " << A.extent<1>() << std::endl;
-  std::cout << "A shape 0: " << A.extent<0>() << std::endl;
-  // std::cout << "A shape 1: " << A.shape<0>() << std::endl;
+  for (itr_t i = 0; i < B.extent<1>(); i++)
+    for (itr_t j = 0; j < B.extent<0>(); j++) {
+      B[i][j] = i * B.extent<0>() + j;
+    }
 
-  for (itr_t n = 0; n < A.extent<2>(); n++)
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-    for (itr_t i = 0; i < A.extent<1>(); i++)
-      for (itr_t k = 0; k < A.extent<0>(); k++) {
-        for (itr_t j = 0; j < A.extent<0>(); j++) {
-          C(n, i, j) += A(n, i, k) * B(n, k, j);
-          // C.with_indices({n, i, j}) += A.with_indices({n, i, k}) * B.with_indices({n, k, j});
-          /*
-          C.data()[n * C.strides<2>() + i * C.strides<1>() + j] +=
-              A.data()[n * A.strides<2>() + i * A.strides<1>() + k] *
-              B.data()[n * B.strides<2>() + k * B.strides<1>() + j];
-              */
-        }
-      }
-  J.reshape(3, 2, 2);
-  A.reshape(3, 2, 2);
-  B.reshape(3, 2, 2);
-  std::iota(A.begin(), A.end(), 1);
-  std::iota(B.begin(), B.end(), 1);
-  // tensor<float, 3> tar = A + B * 2;
+  auto C = make_tensor<float, 2>(4, 4);
+  std::fill(C.begin(), C.end(), 0);
+  std::cout << "C has : " << C.num_elements() << std::endl;
 
-  tensor<float, 1> bb = K + L;
-  std::cout << bb[0] << std::endl;
+  // compute gemm
+  for (itr_t i = 0; i < A.extent<1>(); i++)
+    for (itr_t j = 0; j < A.extent<1>(); j++)
+      for (itr_t k = 0; k < A.extent<0>(); k++)
+        C[i][j] += A[i][k] * B[k][j];
 
-  auto end = system_clock::now();
+  const auto accum = std::accumulate(C.begin(), C.end(), 0);
+  if (accum == 1580) {
+    std::cout << "gemm calculation success : 1580" << std::endl;
+    ;
+  } else {
+    std::cout << "gemm calculation failed : " << accum << std::endl;
+    ret_code = 1;
+  }
 
-  auto sum = std::accumulate(C.begin(), C.end(), 0.0);
-  std::cout << sum << std::endl;
-  std::cout << duration_cast<milliseconds>(end - st).count() / 1000.f << std::endl;
+  int c_sum_indices = 0;
+  for (itr_t i = 0; i < C.extent<1>(); i++)
+    for (itr_t j = 0; j < C.extent<1>(); j++)
+      c_sum_indices += C.with_indices(i, j);
 
-  const auto& a = A.make_view<1>(0, 1);
-  std::cout << "dimeinstion: " << a.dimension() << std::endl;
-  for (auto e : a)
-    std::cout << "e: " << e << std::endl;
+  if (accum == c_sum_indices) {
+    std::cout << "indice access success." << std::endl;
+  } else {
+    std::cout << "indice access failed." << std::endl;
+    ret_code = 1;
+  }
 
-  auto aa = a.to_tensor();
+  // check util functions
+  tensor<float, 3> D(4, 3, 2);
+  std::iota(std::begin(D), std::end(D), 0);
 
-  tensor<float, 4> G{4, 3, 2, 1};
-  std::iota(std::begin(G), std::end(G), 1);
+  // make_view<N>(d1,d2,...)
+  // get N dimension tensor_view from tensor.
+  // in this case, you can get 2d tensor D_view from D(3d tensor).
+  // template argument is the dimension of tensor_view you want to create
+  // and function argumets are the index of upper dimension of D.
+  // for example if D is 4*3*2 tensor and you call D.make_view<2>(1),
+  // it returns 2d tensor_view, which references D[1][*][*].
+  const auto& D_view = D.make_view<2>(1);
+  std::cout << "D_view dim : " << D_view.dimension() << std::endl;
 
-  auto H = tensor_cast<3>(G);
-  H.as_shape_of({4, 3, 2});
+  auto E = D_view.to_tensor();
+  std::cout << E.dimension() << std::endl;
 
-  tensor<float, 4> tt;
-  tt.reshape(4, 3, 2, 1);
-  std::iota(tt.begin(), tt.end(), 1);
-
-  // auto tv = tt.make_view<3>(3);
+  return ret_code;
 }
