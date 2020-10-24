@@ -1,18 +1,3 @@
-/*  a sample program of tensor
- *
- *  ヘッダオンリーのテンソルライブラリ
- *  テンソルは、（情報系の世界では）多次元配列とほぼ同義
- *
- *  本ライブラリでは、
- *  D階 (D次元)のテンソルを組み込み配列と同じように扱うためのクラスを提供する。
- *  クラス内部で動的にメモリ確保を行うため、組み込みの多次元配列と異なり
- *  スタックサイズによる配列サイズの制限を受けない一方で、
- *  組み込み配列と同様に、すべての次元に渡って連続的なメモリ配置を持つため、
- *  理論的なパフォーマンスは、組み込み配列と同等のはず。
- *  また、この特徴のため、内部配列のアドレスをblas等の関数へ渡せばそのまま
- *  高速な計算が行える。
- */
-
 #include "tensor.h"
 #include <chrono>
 #include <cmath>
@@ -41,12 +26,14 @@ int main(int argc, char* argv[]) {
   auto st = system_clock::now();
   using itr_t = decltype(A)::index_t;
 
-  std::cout << A.shape<3>() << std::endl;
-  std::cout << A.shape<2>() << std::endl;
-  std::cout << A.shape<1>() << std::endl;
+  std::cout << "A shape 3: " << A.shape<3>() << std::endl;
+  std::cout << "A shape 2: " << A.shape<2>() << std::endl;
+  std::cout << "A shape 1: " << A.shape<1>() << std::endl;
 
   for (itr_t n = 0; n < A.shape<3>(); n++)
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
     for (itr_t i = 0; i < A.shape<2>(); i++)
       for (itr_t k = 0; k < A.shape<1>(); k++) {
         for (itr_t j = 0; j < A.shape<1>(); j++) {
