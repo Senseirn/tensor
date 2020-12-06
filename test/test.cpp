@@ -1,11 +1,11 @@
 // test program for tensor.h
 
-#include "tensor.h"
+#include "../tensor/tensor.h"
 #include <chrono>
 #include <cmath>
 
 int main() {
-  using namespace rnz;
+  using namespace ts;
   using namespace std::chrono;
   using itr_t = tensor<float, 1>::index_t;
 
@@ -32,9 +32,9 @@ int main() {
     A.data()[i] = i;
   }
 
-  for (itr_t i = 0; i < B.extent<1>(); i++)
-    for (itr_t j = 0; j < B.extent<0>(); j++) {
-      B[i][j] = i * B.extent<0>() + j;
+  for (itr_t i = 0; i < B.shape<1>(); i++)
+    for (itr_t j = 0; j < B.shape<0>(); j++) {
+      B[i][j] = i * B.shape<0>() + j;
     }
 
   auto C = make_tensor<float, 2>(4, 4);
@@ -42,9 +42,9 @@ int main() {
   std::cout << "C has : " << C.num_elements() << std::endl;
 
   // compute gemm
-  for (itr_t i = 0; i < A.extent<1>(); i++)
-    for (itr_t j = 0; j < A.extent<1>(); j++)
-      for (itr_t k = 0; k < A.extent<0>(); k++)
+  for (itr_t i = 0; i < A.shape<1>(); i++)
+    for (itr_t j = 0; j < A.shape<1>(); j++)
+      for (itr_t k = 0; k < A.shape<0>(); k++)
         C[i][j] += A[i][k] * B[k][j];
 
   const auto accum = std::accumulate(C.begin(), C.end(), 0);
@@ -57,8 +57,8 @@ int main() {
   }
 
   int c_sum_indices = 0;
-  for (itr_t i = 0; i < C.extent<1>(); i++)
-    for (itr_t j = 0; j < C.extent<1>(); j++)
+  for (itr_t i = 0; i < C.shape<1>(); i++)
+    for (itr_t j = 0; j < C.shape<0>(); j++)
       c_sum_indices += C.with_indices(i, j);
 
   if (accum == c_sum_indices) {

@@ -147,9 +147,17 @@ void aligned_deleter(T* p) {
 /*--- functions ---*/
 
 // a helper function returning a tensor object.
-template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
-tensor<T, D, INTERNAL_TYPE> make_tensor(const std::initializer_list<INTERNAL_TYPE>& initialzier) {
+/*
+template <typename T, std::size_t D, typename U, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
+tensor<T, D, INTERNAL_TYPE> make_tensor(const std::initializer_list<U>& initialzier) {
   return tensor<T, D, INTERNAL_TYPE>(initialzier);
+}
+*/
+
+template <typename T, std::size_t D, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE, typename... Args>
+tensor<T, D, INTERNAL_TYPE> make_tensor(Args... args) {
+  static_assert(sizeof...(args) == D, "error: dimension miss-match");
+  return tensor<T, D, INTERNAL_TYPE>(args...);
 }
 
 /*--- class and struct ---*/

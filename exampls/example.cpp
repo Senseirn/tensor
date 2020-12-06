@@ -4,12 +4,12 @@
  *  written by Yuta Kambara.
  */
 
-#include "tensor.h"
+#include "../tensor/tensor.h"
 #include <chrono>
 #include <cmath>
 
 int main(int argc, char* argv[]) {
-  using namespace rnz;
+  using namespace ts;
   using namespace std::chrono;
 
   const int N = 4;
@@ -37,8 +37,8 @@ int main(int argc, char* argv[]) {
     std::cout << e << std::endl;
 
   std::cout << "---" << std::endl;
-  std::cout << rnz::is_simd_enabled() << std::endl;
-  std::cout << rnz::is_assert_enabled() << std::endl;
+  std::cout << ts::is_simd_enabled() << std::endl;
+  std::cout << ts::is_assert_enabled() << std::endl;
 
   //  auto AA = (A.make_view<1>(0) = A.make_view<1>(1) * D * D).to_tensor();
 }
