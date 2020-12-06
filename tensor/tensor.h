@@ -330,6 +330,11 @@ class tensor_view : public tensor_internal {
 
   _internal_t shape(const _internal_t d) const { return _dims[d]; }
 
+  template <std::size_t _D, typename std::enable_if<(_D <= D && _D >= 0), std::nullptr_t>::type = nullptr>
+  _internal_t shape() {
+    return _dims[_D];
+  }
+
   const std::vector<_internal_t>& dims() const { return _dims; }
 
   _internal_t strides(const _internal_t d) const { return _strides[d]; }
@@ -567,6 +572,11 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
   _internal_t shape() const { return 1; }
 
   _internal_t shape(const _internal_t d) const { return _dims[d]; }
+
+  template <std::size_t _D, typename std::enable_if<(_D == 0), std::nullptr_t>::type = nullptr>
+  _internal_t shape() {
+    return _dims[_D];
+  }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
 
@@ -1298,6 +1308,11 @@ class tensor<T,
   _internal_t shape() const { return 1; }
 
   _internal_t shape(const _internal_t d) const { return _dims[d]; }
+
+  template <std::size_t _D, typename std::enable_if<(_D == 0), std::nullptr_t>::type = nullptr>
+  _internal_t shape() {
+    return _dims[_D];
+  }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
 
