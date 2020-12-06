@@ -24,4 +24,18 @@ IUTEST(TensorBasicTest, tensor1dBasicTest) {
     IUTEST_ASSERT_TRUE(a.with_indices({i}) == b.with_indices({i}));
     IUTEST_ASSERT_TRUE(a(i) == b(i));
   }
+
+  tensor<int, 1> c = a * 2;
+  for (itr_t i = 0; i < a.num_elements(); i++) {
+    IUTEST_ASSERT_TRUE(a.data()[i] * 2 == c.data()[i]);
+    IUTEST_ASSERT_TRUE(a.with_indices({i}) * 2 == c.with_indices({i}));
+    IUTEST_ASSERT_TRUE(a(i) * 2 == c(i));
+  }
+
+  a = a * 2;
+  for (itr_t i = 0; i < a.num_elements(); i++) {
+    IUTEST_ASSERT_TRUE(a.data()[i] == c.data()[i]);
+    IUTEST_ASSERT_TRUE(a.with_indices({i}) == c.with_indices({i}));
+    IUTEST_ASSERT_TRUE(a(i) == c(i));
+  }
 }
