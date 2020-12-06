@@ -1,0 +1,12 @@
+language: cpp
+compiler:
+  - gcc
+branches:
+  only:
+    - master
+    - develop
+script:
+  - cd test/build
+  - cmake ..
+  - make
+  - ./test.out
