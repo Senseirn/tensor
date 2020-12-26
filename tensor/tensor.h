@@ -807,7 +807,6 @@ class tensor<T,
 
   tensor(const tensor& src) {
     _num_elements = src.num_elements();
-    //_data = new T[_num_elements];
     _data = aligned_alloc<T>(_num_elements);
     std::copy(src.begin(), src.end(), _data);
     _dims = src.dims();
@@ -815,7 +814,7 @@ class tensor<T,
     _extents.init(_data, _dims, _strides);
   }
 
-  tensor(tensor&& src) {
+  tensor(tensor&& src) noexcept {
     _num_elements = src.num_elements();
     _data = src.data();
     src.data() = nullptr;
@@ -846,11 +845,11 @@ class tensor<T,
 
   /*--- operators ---*/
   tensor& operator=(const tensor& src) {
-    // delete[] _data;
-    aligned_deleter(_data);
-    _num_elements = src.num_elements();
-    //_data = new T[_num_elements];
-    _data = aligned_alloc<T>(_num_elements);
+    if (_num_elements != src.num_elements() && _data != nullptr) {
+      aligned_deleter(_data);
+      _num_elements = src.num_elements();
+      _data = aligned_alloc<T>(_num_elements);
+    }
     std::copy(src.begin(), src.end(), _data);
     _dims = src.dims();
     _strides = src.strides();
@@ -863,6 +862,7 @@ class tensor<T,
     aligned_deleter(_data);
     _num_elements = src.num_elements();
     _data = src.data();
+    src.data() = nullptr;
     _dims = std::move(src.dims());
     _strides = std::move(src.strides());
     _extents.init(_data, _dims, _strides);
@@ -1181,7 +1181,7 @@ class tensor<T,
     std::copy(std::begin(view), std::end(view), _data);
   }
 
-  tensor(tensor&& src) {
+  tensor(tensor&& src) noexcept {
     _num_elements = src.num_elements();
     _data = src.data();
     src.data() = nullptr;
@@ -1206,11 +1206,11 @@ class tensor<T,
   }
 
   tensor& operator=(const tensor& src) {
-    // delete[] _data;
-    aligned_deleter(_data);
-    _num_elements = src.num_elements();
-    //_data = new T[_num_elements];
-    _data = aligned_alloc<T>(_num_elements);
+    if (_num_elements != src.num_elements() && _data != nullptr) {
+      aligned_deleter(_data);
+      _num_elements = src.num_elements();
+      _data = aligned_alloc<T>(_num_elements);
+    }
     std::copy(src.begin(), src.end(), _data);
     _dims = src.dims();
     _strides = src.strides();

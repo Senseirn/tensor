@@ -85,5 +85,17 @@ int main() {
   auto E = D_view.to_tensor();
   std::cout << E.dimension() << std::endl;
 
+  auto X = tensor<float, 2>(5, 3);
+  auto Z = std::move(X);
+  std::cout << Z.data() << std::endl;
+
+  tensor<float, 2> Y;
+  Y = std::move(Z);
+  std::cout << Y.data() << std::endl;
+
+  tensor<float, 2> W = std::move(Y);
+  std::cout << Y.data() << std::endl;
+  std::cout << W.data() << std::endl;
+
   return ret_code;
 }
