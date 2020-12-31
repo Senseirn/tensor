@@ -12,7 +12,7 @@
 #endif
 
 /*--- if TENSOR_ENABLE_ASSERTS macro is NOT defined ---*/
-#if not defined(TENSOR_ENABLE_ASSERTS)
+#if not defined(TENSOR_ENABLE_ASSERTS) && not defined(NDEBUG)
 #define NDEBUG
 #endif
 
@@ -414,6 +414,12 @@ class tensor_view : public tensor_internal {
   _internal_t to_index(const type i) {
     return static_cast<_internal_t>(i);
   }
+
+  template <typename type>
+  tensor_view& fill(type x) {
+    std::fill(_data, _data + _num_elements, (T)x);
+    return *this;
+  }
 };
 
 template <typename T, typename INTERNAL_TYPE>
@@ -570,8 +576,6 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
 
   T* data() const { return _data; }
 
-  void fill(T x) { std::fill(_data, _data + _num_elements, x); }
-
   _internal_t num_elements() const { return _num_elements; }
 
   _internal_t shape() const { return 1; }
@@ -621,6 +625,12 @@ class tensor_view<T, 1, INTERNAL_TYPE> : public tensor_internal {
   template <typename type>
   _internal_t to_index(const type i) {
     return static_cast<_internal_t>(i);
+  }
+
+  template <typename type>
+  tensor_view<T, 1, INTERNAL_TYPE>& fill(type x) {
+    std::fill(_data, _data + _num_elements, (T)x);
+    return *this;
   }
 };
 
@@ -954,11 +964,9 @@ class tensor<T,
 
   T* data() const { return _data; }
 
-  void fill(T x) { std::fill(_data, _data + _num_elements, x); }
-
   _internal_t num_elements() const { return _num_elements; }
 
-  void reshape(const std::array<_internal_t, D>& shapes) {
+  tensor& reshape(const std::array<_internal_t, D>& shapes) {
     if (std::find(std::begin(shapes), std::end(shapes), 0) != std::end(shapes)) {
       std::cerr << "error: 0 is not permitted as a size of dimension" << std::endl;
       std::exit(1);
@@ -975,18 +983,23 @@ class tensor<T,
     //_data = new T[_num_elements];
     _data = aligned_alloc<T>(_num_elements);
     _extents.init(_data, _dims, _strides);
+
+    return *this;
   }
 
-  void reshape(const _internal_t shape) {
+  tensor& reshape(const _internal_t shape) {
     std::array<_internal_t, D> tmp;
     tmp.fill(1);
     tmp[D - 1] = shape;
     reshape(tmp);
+
+    return *this;
   }
 
   template <typename... Args>
-  void reshape(Args... args) {
+  tensor& reshape(Args... args) {
     reshape({static_cast<_internal_t>(args)...});
+    return *this;
   }
 
   void as_shape_of(const std::array<_internal_t, D> shapes) {
@@ -1102,6 +1115,12 @@ class tensor<T,
   template <typename type>
   _internal_t to_index(const type i) {
     return static_cast<_internal_t>(i);
+  }
+
+  template <typename type>
+  tensor& fill(type x) {
+    std::fill(_data, _data + _num_elements, (T)x);
+    return *this;
   }
 
   ~tensor() {
@@ -1311,8 +1330,6 @@ class tensor<T,
 
   T* data() const { return _data; }
 
-  void fill(T x) { std::fill(_data, _data + _num_elements, x); }
-
   _internal_t num_elements() const { return _num_elements; }
 
   _internal_t shape() const { return 1; }
@@ -1322,6 +1339,44 @@ class tensor<T,
   template <std::size_t _D, typename std::enable_if<(_D == 0), std::nullptr_t>::type = nullptr>
   _internal_t shape() {
     return _dims[_D];
+  }
+
+  tensor& reshape(const std::array<_internal_t, 1>& shapes) {
+    if (std::find(std::begin(shapes), std::end(shapes), 0) != std::end(shapes)) {
+      std::cerr << "error: 0 is not permitted as a size of dimension" << std::endl;
+      std::exit(1);
+    }
+    _num_elements = shapes[0];
+    std::copy(std::begin(shapes), std::end(shapes), std::begin(_dims));
+    // std::reverse(std::begin(_dims), std::end(_dims));
+    _strides[0] = 1; //_num_elements / _dims[D - 1];
+    /*
+    for (int i = D - 2; i >= 0; i--) {
+      _strides[i] = _strides[i + 1] / _dims[i];
+    }
+    */
+    // delete[] _data;
+    aligned_deleter(_data);
+    //_data = new T[_num_elements];
+    _data = aligned_alloc<T>(_num_elements);
+    //_extents.init(_data, _dims, _strides);
+
+    return *this;
+  }
+
+  tensor& reshape(const _internal_t shape) {
+    std::array<_internal_t, 1> tmp;
+    tmp.fill(1);
+    tmp[0] = shape;
+    reshape(tmp);
+
+    return *this;
+  }
+
+  template <typename... Args>
+  tensor& reshape(Args... args) {
+    reshape({static_cast<_internal_t>(args)...});
+    return *this;
   }
 
   const std::vector<_internal_t>& dims() const { return _dims; }
@@ -1355,6 +1410,12 @@ class tensor<T,
   template <typename type>
   _internal_t to_index(const type i) {
     return static_cast<_internal_t>(i);
+  }
+
+  template <typename type>
+  tensor& fill(type x) {
+    std::fill(_data, _data + _num_elements, (T)x);
+    return *this;
   }
 
   ~tensor() { // delete[] _data;

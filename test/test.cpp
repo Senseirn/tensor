@@ -38,4 +38,17 @@ IUTEST(TensorBasicTest, tensor1dBasicTest) {
     IUTEST_ASSERT_TRUE(a.with_indices({i}) == c.with_indices({i}));
     IUTEST_ASSERT_TRUE(a(i) == c(i));
   }
+
+  // Test fill function
+  tensor<int, 1> d;
+  d.reshape(5).fill(5);
+  IUTEST_ASSERT_EQ(5, d.num_elements());
+  auto result1 = std::find_if_not(std::begin(d), std::end(d), [](int x) { return x == 5; }) == std::end(d);
+  IUTEST_ASSERT_TRUE(result1 == true);
+
+  tensor<int, 2> e;
+  e.reshape(3, 3).fill(10);
+  IUTEST_ASSERT_EQ(9, e.num_elements());
+  auto result2 = std::find_if_not(std::begin(e), std::end(e), [](int x) { return x == 10; }) == std::end(e);
+  IUTEST_ASSERT_TRUE(result2 == true);
 }

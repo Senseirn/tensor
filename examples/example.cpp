@@ -21,7 +21,12 @@ int main(int argc, char* argv[]) {
   // we can change the size later
   tensor<float, 2> B, C;
   B.reshape(N, N);
-  C.reshape(N, N);
+
+  for (auto& e : C) {
+    std::cout << e << std::endl;
+  }
+
+  std::cout << "---" << std::endl;
 
   std::iota(std::begin(B), std::end(B), 1);
   std::iota(std::begin(A), std::end(A), 1);
