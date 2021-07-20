@@ -3,7 +3,7 @@
 
 #include "../tensor/tensor.h"
 
-using namespace ts;
+using namespace ssrn;
 
 IUTEST(TensorBasicTest, tensor1dBasicTest) {
   tensor<int, 1> a(3);                      // 1x3 tensor

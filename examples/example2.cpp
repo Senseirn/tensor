@@ -5,7 +5,7 @@
 #include <cmath>
 
 int main() {
-  using namespace ts;
+  using namespace ssrn;
   using namespace std::chrono;
   using itr_t = tensor<float, 1>::index_t;
 

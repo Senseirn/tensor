@@ -45,6 +45,11 @@
 #define TENSOR_DEFAULT_INTERNAL_TYPE int32_t
 #endif
 
+/*--- define name of namespace(default is ssrn) ---*/
+#ifndef TENSOR_NAMESPACE_NAME
+#define TENSOR_NAMESPACE_NAME ssrn
+#endif
+
 #include <algorithm>
 #include <array>
 #include <functional>
@@ -58,7 +63,7 @@
 #include <immintrin.h>
 #endif
 
-namespace ts {
+namespace TENSOR_NAMESPACE_NAME {
 
 /* the bese class of all tensor classes */
 class tensor_internal {};
@@ -1427,10 +1432,10 @@ class tensor<T,
 template <typename T, typename INTERNAL_TYPE = TENSOR_DEFAULT_INTERNAL_TYPE>
 using vector = tensor<T, 1, INTERNAL_TYPE>;
 
-} // namespace ts
+} // namespace TENSOR_NAMESPACE_NAME
 
 /*--- Expression Templates ---*/
-namespace ts {
+namespace TENSOR_NAMESPACE_NAME {
 template <typename L, typename Op, typename R, typename T, typename ITYPE>
 class Expr : public tensor_internal {
  public:
@@ -1671,4 +1676,4 @@ Expr<L, Mul, R, typename L::value_type> operator*(const L& lhs, const R& rhs) {
   return Expr<L, Mul, R, typename L::value_type, typename L::_internal_t>(lhs, rhs);
 }
 
-} // namespace ts
+} // namespace TENSOR_NAMESPACE_NAME
