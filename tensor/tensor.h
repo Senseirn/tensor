@@ -42,7 +42,7 @@
 
 /*--- define default internal type ---*/
 #ifndef TENSOR_DEFAULT_INTERNAL_TYPE
-#define TENSOR_DEFAULT_INTERNAL_TYPE std::size_t
+#define TENSOR_DEFAULT_INTERNAL_TYPE int32_t
 #endif
 
 #include <algorithm>
